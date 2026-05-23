@@ -91,11 +91,7 @@ const ACTION_LABELS = {
 };
 
 // ─── Persistence ────────────────────────────────────────────────────────────
-const DEMO = [
-  { ref:"VIG-ABC1", clientName:"James Harrington", clientEmail:"james@example.com", clientPhone:"07700 111111", pickup:"Heathrow Terminal 5, London", dropoff:"The Dorchester, Park Lane, London", date:"2026-05-24", time:"14:30", vehicle:"Mercedes S-Class", driverId:3, price:"70.00", passengers:2, notes:"Meet & greet. Flight BA106.", status:"confirmed" },
-  { ref:"VIG-DEF2", clientName:"Sarah Mitchell",   clientEmail:"sarah@example.com",  clientPhone:"07700 222222", pickup:"Canary Wharf, London",         dropoff:"London Gatwick Airport",                  date:"2026-05-23", time:"06:00", vehicle:"Mercedes E220d",   driverId:1, price:"80.00", passengers:1, notes:"Early morning. 2 large suitcases.", status:"complete" },
-  { ref:"VIG-GHI3", clientName:"The Bennett Group", clientEmail:"pa@bennett.co.uk",  clientPhone:"020 7000 0001", pickup:"Liverpool Street Station",     dropoff:"Cambridge, CB1",                          date:"2026-05-25", time:"09:00", vehicle:"Mercedes V-Class", driverId:2, price:"195.00", passengers:5, notes:"Corporate. Water & WiFi requested.", status:"pending" },
-];
+const DEMO = [];
 
 function loadJobs() {
   try { const s = localStorage.getItem("vig_jobs"); return s ? JSON.parse(s) : DEMO; } catch(e) { return DEMO; }
