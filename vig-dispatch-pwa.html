@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="VIG Dispatch" />
+  <meta name="theme-color" content="#0e0e0e" />
+  <title>VIG Executive Travel — Dispatch</title>
+
+  <!-- PWA Manifest inline -->
+  <link rel="manifest" href="#" id="manifest-placeholder" />
+
+  <!-- Apple touch icon (gold V on dark) -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23000000'/%3E%3Ctext x='50' y='62' font-family='Arial,sans-serif' font-size='30' font-weight='900' fill='%23ffffff' text-anchor='middle' letter-spacing='2'%3EVIG%3C/text%3E%3C/svg%3E" />
+
+
+
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; padding: 0; background: #f5f5f5; color: #111111; font-family: Arial, Helvetica, sans-serif; font-size: 14px; height: 100%; overscroll-behavior: none; }
+    body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+    input, select, textarea, button { font-family: inherit; }
+    input[type="date"], input[type="time"] { color-scheme: light; }
+    ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: #eee; } ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+    .gold-btn { background: linear-gradient(135deg,#1a3a6b,#0f2548); color: #ffffff; border: none; border-radius: 8px; padding: 12px 22px; font-family: Arial, Helvetica, sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; }
+    .gold-btn:active { opacity: 0.8; transform: scale(0.97); }
+    .sec-btn { background: transparent; color: #1a3a6b; border: 1px solid #1a3a6b80; border-radius: 8px; padding: 11px 18px; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; }
+    .sec-btn:active { opacity: 0.7; }
+    .input-field { width: 100%; background: #ffffff; border: 1.5px solid #d0d0d0; border-radius: 8px; padding: 12px 14px; color: #111111; font-family: Arial, Helvetica, sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; -webkit-appearance: none; appearance: none; }
+    .input-field:focus { border-color: #1a3a6b; }
+    select.input-field { background-color: #ffffff; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231a3a6b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+    .field-label { display: block; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #1a3a6b; margin-bottom: 6px; font-family: monospace; font-weight: 700; }
+    .field { margin-bottom: 16px; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: flex; align-items: flex-end; justify-content: center; }
+    .modal-sheet { background: #ffffff; border: 1px solid #e0e0e0; border-radius: 18px 18px 0 0; width: 100%; max-width: 640px; max-height: 92vh; overflow-y: auto; padding: 24px 20px 40px; -webkit-overflow-scrolling: touch; box-shadow: 0 -4px 24px rgba(0,0,0,0.12); }
+    .modal-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; margin: 0 auto 20px; }
+    .badge { border-radius: 20px; padding: 3px 12px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; font-family: monospace; display: inline-block; }
+    .card { background: #ffffff; border: 1px solid #e8e8e8; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .card:active { transform: scale(0.98); opacity: 0.9; }
+    .stat-box { background: #ffffff; border: 1px solid #e8e8e8; border-radius: 10px; padding: 8px 6px; text-align: center; flex: 1; min-width: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+    .filter-tab { background: #ffffff; color: #888; border: 1px solid #ddd; border-radius: 20px; padding: 5px 14px; font-family: monospace; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; white-space: nowrap; -webkit-appearance: none; }
+    .filter-tab.active { background: #1a3a6b; color: #ffffff; border-color: #1a3a6b; }
+    .toast { position: fixed; bottom: calc(env(safe-area-inset-bottom) + 20px); left: 50%; transform: translateX(-50%); background: #1a3a6b; border-radius: 12px; padding: 14px 22px; color: #ffffff; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 9999; white-space: nowrap; max-width: 90vw; text-align: center; }
+    #install-banner { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 2px solid #1a3a6b; padding: 16px 20px calc(16px + env(safe-area-inset-bottom)); z-index: 200; }
+  </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<!-- Install to Home Screen Banner -->
+<div id="install-banner">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+    <div style="font-size:13px;color:#c9a84c;">
+      <strong>Add to Home Screen</strong><br>
+      <span style="font-size:12px;color:#888;">Tap <strong style="color:#1a3a6b;">Share</strong> then <strong style="color:#1a3a6b;">Add to Home Screen</strong> for the full app experience</span>
+    </div>
+    <button onclick="document.getElementById('install-banner').style.display='none'" style="background:none;border:none;color:#555;font-size:22px;cursor:pointer;padding:4px;">×</button>
+  </div>
+</div>
+
+<script>
+// ─── Data ───────────────────────────────────────────────────────────────────
+function loadDrivers() {
+  try { const s = localStorage.getItem("vig_drivers"); return s ? JSON.parse(s) : []; } catch(e) { return []; }
+}
+function saveDrivers(d) { try { localStorage.setItem("vig_drivers", JSON.stringify(d)); } catch(e) {} }
+function loadVehicles() {
+  try { const s = localStorage.getItem("vig_vehicles"); return s ? JSON.parse(s) : []; } catch(e) { return []; }
+}
+function saveVehicles(v) { try { localStorage.setItem("vig_vehicles", JSON.stringify(v)); } catch(e) {} }
+
+const STATUS_CONFIG = {
+  pending:   { label: "Pending",   color: "#b8860b", bg: "rgba(184,134,11,0.15)" },
+  confirmed: { label: "Confirmed", color: "#2e9e5b", bg: "rgba(46,158,91,0.15)" },
+  enroute:   { label: "En Route",  color: "#1e7bbf", bg: "rgba(30,123,191,0.15)" },
+  complete:  { label: "Complete",  color: "#8a6bbf", bg: "rgba(138,107,191,0.15)" },
+  cancelled: { label: "Cancelled", color: "#c0392b", bg: "rgba(192,57,43,0.15)" },
+};
+
+const ACTION_FLOW = {
+  pending:   ["confirmed","cancelled"],
+  confirmed: ["complete","cancelled"],
+  enroute:   ["complete"],
+  complete:  [], cancelled: [],
+};
+
+const ACTION_LABELS = {
+  confirmed: "✓ Confirm Job", enroute: "🚗 Driver En Route",
+  complete: "✅ Mark Complete", cancelled: "✗ Cancel Job"
+};
+
+// ─── Persistence ────────────────────────────────────────────────────────────
+const DEMO = [];
+
+function loadJobs() {
+  try { const s = localStorage.getItem("vig_jobs"); return s ? JSON.parse(s) : DEMO; } catch(e) { return DEMO; }
+}
+function saveJobs(jobs) {
+  try { localStorage.setItem("vig_jobs", JSON.stringify(jobs)); } catch(e) {}
+}
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let state = {
+  jobs: loadJobs(),
+  drivers: loadDrivers(),
+  vehicles: loadVehicles(),
+  filter: "all",
+  modal: null,       // null | "new" | "detail" | "settings"
+  selectedRef: null,
+  editing: false,
+  toastMsg: null,
+  toastTimer: null,
+};
+
+function setState(patch) {
+  Object.assign(state, patch);
+  render();
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function genRef() { return "VIG-" + Date.now().toString(36).toUpperCase().slice(-6); }
+function fmtDate(d) {
+  if (!d) return "";
+  const [y,m,day] = d.split("-");
+  const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const dow = days[new Date(y, m-1, day).getDay()];
+  return dow + " " + day + "/" + m + "/" + y;
+}
+
+function showToast(msg) {
+  if (state.toastTimer) clearTimeout(state.toastTimer);
+  const timer = setTimeout(() => setState({ toastMsg: null, toastTimer: null }), 3500);
+  setState({ toastMsg: msg, toastTimer: timer });
+}
+
+function el(tag, attrs, ...children) {
+  const e = document.createElement(tag);
+  if (attrs) Object.entries(attrs).forEach(([k,v]) => {
+    if (k === "className") e.className = v;
+    else if (k === "style" && typeof v === "object") Object.assign(e.style, v);
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2).toLowerCase(), v);
+    else e.setAttribute(k, v);
+  });
+  children.flat().forEach(c => c != null && e.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
+  return e;
+}
+
+function badge(status) {
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
+  return el("span", { className: "badge", style: { background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}40` } }, cfg.label);
+}
+
+// ─── Calendar ────────────────────────────────────────────────────────────────
+function addToCalendar(job) {
+  const [y,mo,dy] = job.date.split("-");
+  const [hh,mm] = job.time.split(":");
+  const start = new Date(y, mo-1, dy, hh, mm);
+  const end   = new Date(start.getTime() + 3600000);
+  const fmt   = d => d.toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
+
+  const ics = [
+    "BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//VIG Executive Travel//EN","CALSCALE:GREGORIAN","METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    "UID:" + job.ref + "@vigexecutivetravel.co.uk",
+    "DTSTART:" + fmt(start),
+    "DTEND:"   + fmt(end),
+    "SUMMARY:VIG Transfer - " + job.clientName,
+    "LOCATION:" + job.pickup + " to " + job.dropoff,
+    "DESCRIPTION:Ref: " + job.ref +
+      "\\nDriver: " + (job.driverName||"TBC") +
+      "\\nVehicle: " + (job.vehicle||"") +
+      "\\nFare: \u00a3" + job.price +
+      "\\nFlight: " + (job.flightNo||"N/A") +
+      "\\nFrom: " + (job.flightFrom||"N/A") +
+      "\\nNotes: " + (job.notes||"None"),
+    "END:VEVENT","END:VCALENDAR"
+  ].join("\r\n");
+
+  // Remove any existing popup
+  const existing = document.getElementById("cal-tap-banner");
+  if (existing) existing.remove();
+
+  const base64 = btoa(unescape(encodeURIComponent(ics)));
+  const dataUri = "data:text/calendar;base64," + base64;
+
+  const overlay = document.createElement("div");
+  overlay.id = "cal-tap-banner";
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+  const box = document.createElement("div");
+  box.style.cssText = "background:#ffffff;border-radius:16px;padding:28px 24px;max-width:320px;width:100%;text-align:center;";
+
+  const title = document.createElement("div");
+  title.style.cssText = "font-size:20px;font-weight:700;color:#1a3a6b;margin-bottom:8px;";
+  title.textContent = "Add to Apple Calendar";
+
+  const sub = document.createElement("div");
+  sub.style.cssText = "font-size:15px;color:#555;margin-bottom:24px;";
+  sub.textContent = "Tap the button below to open this booking in Calendar";
+
+  const link = document.createElement("a");
+  link.href = dataUri;
+  link.download = job.ref + ".ics";
+  link.style.cssText = "display:block;background:#1a3a6b;color:#ffffff;font-weight:700;font-size:17px;padding:14px 20px;border-radius:10px;text-decoration:none;margin-bottom:14px;";
+  link.textContent = "📅 Open in Calendar";
+
+  const cancel = document.createElement("button");
+  cancel.style.cssText = "background:none;border:none;color:#888;font-size:15px;cursor:pointer;padding:8px;";
+  cancel.textContent = "Cancel";
+  cancel.onclick = () => overlay.remove();
+
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  box.appendChild(title);
+  box.appendChild(sub);
+  box.appendChild(link);
+  box.appendChild(cancel);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+// ─── Job Form ────────────────────────────────────────────────────────────────
+function renderForm(initial, onSave, onCancel) {
+  const f = initial ? {...initial} : { clientName:"", clientEmail:"", clientPhone:"", pickup:"", dropoff:"", date:"", time:"", price:"", flightNo:"", flightFrom:"", vehicle:"", driverName:"", notes:"", passengers:1 };
+
+  const wrap = el("div", {});
+
+  function fieldEl(labelTxt, inputEl) {
+    return el("div", { className:"field" }, el("label", { className:"field-label" }, labelTxt), inputEl);
+  }
+  function inp(type, key, placeholder, extra) {
+    const i = el("input", { type, className:"input-field", placeholder: placeholder||"", value: f[key]||"", ...extra });
+    i.addEventListener("input", e => { f[key] = e.target.value; checkValid(); });
+    return i;
+  }
+  function sel(key, options) {
+    const s = el("select", { className:"input-field" });
+    options.forEach(([v,t]) => {
+      const o = el("option", { value:v }, t||v);
+      if (String(f[key]) === String(v)) o.selected = true;
+      s.appendChild(o);
+    });
+    s.addEventListener("change", e => { f[key] = e.target.value; });
+    return s;
+  }
+  function textarea(key, placeholder) {
+    const t = el("textarea", { className:"input-field", placeholder, style:{ minHeight:"70px", resize:"vertical" } }, f[key]||"");
+    t.addEventListener("input", e => { f[key] = e.target.value; });
+    return t;
+  }
+
+  const saveBtn = el("button", { className:"gold-btn", style:{ opacity:"0.4" } }, initial ? "Save Changes" : "Create Booking");
+  saveBtn.disabled = true;
+
+  function checkValid() {
+    const ok = f.clientName && f.pickup && f.dropoff && f.date && f.time && f.price;
+    saveBtn.disabled = !ok;
+    saveBtn.style.opacity = ok ? "1" : "0.4";
+  }
+
+  const row1 = el("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 12px" } },
+    fieldEl("Client Name", inp("text","clientName","Full name")),
+    fieldEl("Phone",       inp("tel","clientPhone","+44...")),
+    fieldEl("Email",       inp("email","clientEmail","client@email.com")),
+    fieldEl("Passengers",  inp("number","passengers","",""))
+  );
+  const row2 = el("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"0 12px" } },
+    fieldEl("Date",     inp("date","date","")),
+    fieldEl("Time",     inp("time","time","")),
+    fieldEl("Fare (£)", inp("number","price","0.00"))
+  );
+  const row3 = el("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 12px" } },
+    fieldEl("Vehicle", (() => {
+      const vehicles = state.vehicles;
+      if (vehicles.length === 0) return inp("text","vehicle","Add vehicles in Settings");
+      const s = el("select", { className:"input-field" });
+      const blank = el("option", { value:"" }, "Select vehicle...");
+      s.appendChild(blank);
+      vehicles.forEach(v => {
+        const o = el("option", { value: v }, v);
+        if (f["vehicle"] === v) o.selected = true;
+        s.appendChild(o);
+      });
+      s.addEventListener("change", e => { f["vehicle"] = e.target.value; checkValid(); });
+      return s;
+    })()),
+    fieldEl("Driver", (() => {
+      const drivers = state.drivers;
+      if (drivers.length === 0) return inp("text","driverName","Add drivers in Settings");
+      const s = el("select", { className:"input-field" });
+      const blank = el("option", { value:"" }, "Select driver...");
+      s.appendChild(blank);
+      drivers.forEach(d => {
+        const o = el("option", { value: d }, d);
+        if (f["driverName"] === d) o.selected = true;
+        s.appendChild(o);
+      });
+      s.addEventListener("change", e => { f["driverName"] = e.target.value; checkValid(); });
+      return s;
+    })())
+  );
+
+  saveBtn.addEventListener("click", () => onSave({ ...f, ref: initial?.ref || genRef() }));
+  const cancelBtn = el("button", { className:"sec-btn" }, "Cancel");
+  cancelBtn.addEventListener("click", onCancel);
+
+  const row2b = el("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 12px" } },
+    fieldEl("Flight No",  inp("text","flightNo","e.g. BA106")),
+    fieldEl("From",       inp("text","flightFrom","e.g. New York JFK"))
+  );
+
+  wrap.append(
+    row1,
+    fieldEl("Pickup Address",   inp("text","pickup","Full pickup address")),
+    fieldEl("Drop-off Address", inp("text","dropoff","Full destination address")),
+    row2,
+    row2b,
+    row3,
+    fieldEl("Notes / Special Instructions", textarea("notes","Meet & greet, luggage, wheelchair...")),
+    el("div", { style:{ display:"flex", gap:"10px", justifyContent:"flex-end", marginTop:"8px" } }, cancelBtn, saveBtn)
+  );
+  return wrap;
+}
+
+// ─── Job Detail ───────────────────────────────────────────────────────────────
+function renderDetail(job) {
+  const wrap = el("div", {});
+
+  if (state.editing) {
+    wrap.appendChild(renderForm(job,
+      updated => {
+        const jobs = state.jobs.map(j => j.ref === updated.ref ? {...updated, status: job.status} : j);
+        saveJobs(jobs);
+        setState({ jobs, editing: false });
+        showToast("Booking updated.");
+      },
+      () => setState({ editing: false })
+    ));
+    return wrap;
+  }
+
+  // Header
+  wrap.appendChild(el("div", { style:{ display:"flex", gap:"8px", flexWrap:"wrap", marginBottom:"16px", alignItems:"center" } },
+    badge(job.status),
+    el("span", { style:{ fontFamily:"monospace", fontSize:"11px", color:"#888" } }, job.ref)
+  ));
+
+  // Info grid
+  const grid = el("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px", marginBottom:"16px" } });
+  [
+    ["Client", job.clientName], ["Phone", job.clientPhone||"—"],
+    ["Email", job.clientEmail||"—"], ["Passengers", job.passengers],
+    ["Date", fmtDate(job.date)], ["Time", job.time],
+    ["Pickup", job.pickup], ["Drop-off", job.dropoff],
+    ["Vehicle", job.vehicle || "—"],
+    ["Driver", job.driverName || "—"],
+    ["Flight No", job.flightNo || "—"],
+    ["From", job.flightFrom || "—"],
+  ].forEach(([k,v]) => {
+    grid.appendChild(el("div", {},
+      el("div", { style:{ fontSize:"10px", letterSpacing:"2px", color:"#1a3a6b", fontFamily:"monospace", textTransform:"uppercase", marginBottom:"2px", fontWeight:"700" } }, k),
+      el("div", { style:{ fontSize:"13px", color:"#111111" } }, String(v))
+    ));
+  });
+  wrap.appendChild(grid);
+
+  // Fare / Driver box
+  const fareBox = el("div", { style:{ background:"#f0f4ff", border:"1px solid #c0cce8", borderRadius:"10px", padding:"14px 16px", marginBottom:"14px", display:"flex", justifyContent:"space-between", alignItems:"center" } },
+    el("div", {},
+      el("div", { style:{ fontSize:"10px", letterSpacing:"2px", color:"#1a3a6b", fontFamily:"monospace", fontWeight:"700" } }, "FARE"),
+      el("div", { style:{ fontSize:"24px", color:"#1a3a6b", fontWeight:"700" } }, "£" + job.price)
+    ),
+    el("div", { style:{ textAlign:"right" } },
+      el("div", { style:{ fontSize:"10px", letterSpacing:"2px", color:"#1a3a6b", fontFamily:"monospace", fontWeight:"700" } }, "DRIVER"),
+      el("div", { style:{ fontSize:"13px", color:"#111111" } }, job.driverName || "—"),
+      el("div", { style:{ fontSize:"11px", color:"#666" } }, job.vehicle || "")
+    )
+  );
+  wrap.appendChild(fareBox);
+
+  // Notes
+  if (job.notes) {
+    wrap.appendChild(el("div", { style:{ background:"#f9f9f9", border:"1px solid #e8e8e8", borderRadius:"8px", padding:"10px 14px", marginBottom:"14px" } },
+      el("div", { style:{ fontSize:"10px", letterSpacing:"2px", color:"#1a3a6b", fontFamily:"monospace", marginBottom:"4px", fontWeight:"700" } }, "NOTES"),
+      el("div", { style:{ fontSize:"13px", color:"#444" } }, job.notes)
+    ));
+  }
+
+  // Status action buttons
+  const actions = ACTION_FLOW[job.status] || [];
+  if (actions.length) {
+    const btnRow = el("div", { style:{ display:"flex", gap:"8px", flexWrap:"wrap", marginBottom:"10px" } });
+    actions.forEach(s => {
+      const b = el("button", { className: s === "cancelled" ? "sec-btn" : "gold-btn" }, ACTION_LABELS[s]);
+      b.addEventListener("click", () => {
+        const jobs = state.jobs.map(j => j.ref === job.ref ? {...j, status: s} : j);
+        saveJobs(jobs);
+        const msgs = { confirmed:`Job ${job.ref} confirmed.`, enroute:`Driver en route for ${job.ref}.`, complete:`Job ${job.ref} complete.`, cancelled:`Job ${job.ref} cancelled.` };
+        setState({ jobs, selectedRef: job.ref });
+        showToast(msgs[s] || "Updated.");
+      });
+      btnRow.appendChild(b);
+    });
+    wrap.appendChild(btnRow);
+  }
+
+  // Edit / Calendar / Delete
+  const util = el("div", { style:{ display:"flex", gap:"8px", flexWrap:"wrap" } });
+  const editBtn = el("button", { className:"sec-btn" }, "✏️ Edit Booking");
+  editBtn.addEventListener("click", () => setState({ editing: true }));
+  const calBtn = el("button", { className:"sec-btn", style:{ cursor:"pointer", WebkitUserSelect:"none", userSelect:"none" } }, "📅 Add to Apple Calendar");
+  calBtn.addEventListener("touchend", (e) => { e.preventDefault(); addToCalendar(job); });
+  calBtn.addEventListener("click", (e) => { e.preventDefault(); addToCalendar(job); });
+
+  const delBtn = el("button", { className:"sec-btn", style:{ color:"#c0392b", borderColor:"#c0392b80" } }, "🗑 Delete Job");
+  delBtn.addEventListener("click", () => {
+    if (confirm("Delete this booking permanently? This cannot be undone.")) {
+      const jobs = state.jobs.filter(j => j.ref !== job.ref);
+      saveJobs(jobs);
+      setState({ jobs, modal: null, selectedRef: null });
+      showToast("Booking " + job.ref + " deleted.");
+    }
+  });
+
+  util.append(editBtn, calBtn, delBtn);
+  wrap.appendChild(util);
+
+  return wrap;
+}
+
+// ─── Main Render ──────────────────────────────────────────────────────────────
+function render() {
+  const root = document.getElementById("root");
+  root.innerHTML = "";
+
+  const { jobs, filter, modal, selectedRef, toastMsg } = state;
+  const counts = {};
+  Object.keys(STATUS_CONFIG).forEach(s => counts[s] = jobs.filter(j => j.status === s).length);
+
+
+  // ── Header ──
+  const header = el("div", { style:{ background:"#1a3a6b", borderBottom:"1px solid #0f2548", padding:"14px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", position:"sticky", top:"0", zIndex:"50" } },
+    el("div", { style:{ display:"flex", alignItems:"center", gap:"12px" } },
+      el("div", { style:{ width:"44px", height:"44px", borderRadius:"10px", background:"#000000", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:"0" } },
+        el("span", { style:{ color:"#ffffff", fontSize:"13px", fontWeight:"900", letterSpacing:"1px", fontFamily:"Arial, sans-serif" } }, "VIG")
+      ),
+      el("div", {},
+        el("div", { style:{ fontSize:"14px", fontWeight:"700", letterSpacing:"0.5px", color:"#ffffff" } }, "VIG Executive Travel"),
+        el("div", { style:{ fontFamily:"monospace", fontSize:"9px", color:"rgba(255,255,255,0.5)", letterSpacing:"2px" } }, "DISPATCH MANAGEMENT")
+      )
+    ),
+    el("div", { style:{ display:"flex", gap:"8px" } },
+      (() => { const b = el("button", { className:"gold-btn", style:{ padding:"9px 16px", fontSize:"14px" } }, "+ New Booking"); b.addEventListener("click", () => setState({ modal:"new", editing:false })); return b; })(),
+      (() => { const b = el("button", { className:"sec-btn", style:{ padding:"9px 14px", fontSize:"14px" } }, "⚙️"); b.addEventListener("click", () => setState({ modal:"settings" })); return b; })()
+    )
+  );
+
+  // ── Stats ──
+  const statsRow = el("div", { style:{ display:"flex", gap:"8px", padding:"14px 16px", overflowX:"auto", background:"#f5f5f5", WebkitOverflowScrolling:"touch" } });
+  [
+    { label:"Total",    value: jobs.length,      color:"#111111" },
+    { label:"Pndg",     value: counts.pending,   color:"#b8860b" },
+    { label:"Conf",     value: counts.confirmed, color:"#2e9e5b" },
+    { label:"En Rte",   value: counts.enroute,   color:"#1e7bbf" },
+    { label:"Done",     value: counts.complete,  color:"#8a6bbf" },
+
+  ].forEach(s => {
+    statsRow.appendChild(el("div", { className:"stat-box" },
+      el("div", { style:{ fontSize:"13px", fontWeight:"700", color: s.color } }, String(s.value)),
+      el("div", { style:{ fontFamily:"monospace", fontSize:"8px", color:"#555", letterSpacing:"0.5px", textTransform:"uppercase", marginTop:"2px" } }, s.label)
+    ));
+  });
+
+  // ── Filter tabs ──
+  const filtersRow = el("div", { style:{ display:"flex", gap:"6px", padding:"8px 16px 12px", overflowX:"auto", background:"#f5f5f5", WebkitOverflowScrolling:"touch" } });
+  ["all",...Object.keys(STATUS_CONFIG)].forEach(s => {
+    const b = el("button", { className:"filter-tab" + (filter===s ? " active" : "") }, s==="all" ? "All" : STATUS_CONFIG[s].label);
+    b.addEventListener("click", () => setState({ filter: s }));
+    filtersRow.appendChild(b);
+  });
+
+  // ── Job cards ──
+  const filtered = filter === "all" ? jobs : jobs.filter(j => j.status === filter);
+  const cardList = el("div", { style:{ padding:"0 16px 100px" } });
+  if (!filtered.length) {
+    cardList.appendChild(el("div", { style:{ textAlign:"center", color:"#333", padding:"60px 0", fontStyle:"italic" } }, "No bookings found."));
+  }
+  filtered.forEach(job => {
+    const card = el("div", { className:"card" },
+      el("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" } },
+        el("div", {},
+          el("div", { style:{ fontFamily:"monospace", fontSize:"10px", color:"#1a3a6b", letterSpacing:"2px" } }, job.ref),
+          el("div", { style:{ fontSize:"15px", fontWeight:"600", marginTop:"2px", color:"#111111" } }, job.clientName)
+        ),
+        badge(job.status)
+      ),
+      el("div", { style:{ fontSize:"13px", color:"#555", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"5px 10px" } },
+        el("span", {}, "📍 " + job.pickup),
+        el("span", {}, "🏁 " + job.dropoff),
+        el("span", {}, "📅 " + fmtDate(job.date) + " " + job.time),
+        el("span", {}, "👤 " + (job.driverName || "Unassigned"))
+      ),
+      el("div", { style:{ marginTop:"10px", display:"flex", justifyContent:"space-between", alignItems:"center" } },
+        el("span", { style:{ fontFamily:"monospace", fontSize:"13px", color:"#1a3a6b", fontWeight:"700" } }, "£" + job.price),
+        el("span", { style:{ fontSize:"11px", color:"#888" } }, job.vehicle)
+      )
+    );
+    card.addEventListener("click", () => setState({ modal:"detail", selectedRef: job.ref, editing: false }));
+    cardList.appendChild(card);
+  });
+
+  root.append(header, statsRow, filtersRow, cardList);
+
+  // ── Modals ──
+  if (modal === "new") {
+    const overlay = el("div", { className:"modal-overlay" });
+    overlay.addEventListener("click", e => { if (e.target === overlay) setState({ modal:null }); });
+    const sheet = el("div", { className:"modal-sheet" },
+      el("div", { className:"modal-handle" }),
+      el("div", { style:{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"20px" } },
+        el("div", { style:{ display:"flex", alignItems:"center", gap:"10px" } },
+          (() => { const b = el("button", { style:{ background:"none", border:"none", fontSize:"24px", cursor:"pointer", color:"#1a3a6b", padding:"0 4px", lineHeight:"1" } }, "←"); b.addEventListener("click", () => setState({ modal:null })); return b; })(),
+          el("div", { style:{ fontSize:"16px", fontWeight:"600", color:"#1a3a6b" } }, "New Booking")
+        ),
+        (() => { const b = el("button", { style:{ background:"none", border:"none", fontSize:"26px", cursor:"pointer", color:"#aaa", padding:"0 4px", lineHeight:"1" } }, "×"); b.addEventListener("click", () => setState({ modal:null })); return b; })()
+      ),
+      renderForm(null,
+        job => {
+          const jobs = [{ ...job, status:"pending" }, ...state.jobs];
+          saveJobs(jobs);
+          setState({ jobs, modal:null });
+          showToast("Booking " + job.ref + " created.");
+        },
+        () => setState({ modal:null })
+      )
+    );
+    overlay.appendChild(sheet);
+    root.appendChild(overlay);
+  }
+
+  if (modal === "detail" && selectedRef) {
+    const job = jobs.find(j => j.ref === selectedRef);
+    if (job) {
+      const overlay = el("div", { className:"modal-overlay" });
+      overlay.addEventListener("click", e => { if (e.target === overlay) setState({ modal:null, editing:false }); });
+      const sheet = el("div", { className:"modal-sheet" },
+        el("div", { className:"modal-handle" }),
+        el("div", { style:{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"16px" } },
+          el("div", { style:{ display:"flex", alignItems:"center", gap:"10px" } },
+            (() => { const b = el("button", { style:{ background:"none", border:"none", fontSize:"24px", cursor:"pointer", color:"#1a3a6b", padding:"0 4px", lineHeight:"1" } }, "←"); b.addEventListener("click", () => setState({ modal:null, editing:false })); return b; })(),
+            el("div", { style:{ fontSize:"14px", fontWeight:"600", color:"#1a3a6b" } }, "Booking — " + job.ref)
+          ),
+          (() => { const b = el("button", { style:{ background:"none", border:"none", fontSize:"26px", cursor:"pointer", color:"#aaa", padding:"0 4px", lineHeight:"1" } }, "×"); b.addEventListener("click", () => setState({ modal:null, editing:false })); return b; })()
+        ),
+        renderDetail(job)
+      );
+      overlay.appendChild(sheet);
+      root.appendChild(overlay);
+    }
+  }
+
+  // ── Settings Modal ──
+  if (modal === "settings") {
+    const overlay = el("div", { className:"modal-overlay" });
+    overlay.addEventListener("click", e => { if (e.target === overlay) setState({ modal:null }); });
+
+    function settingsSection(title, items, saveFn, placeholder) {
+      const section = el("div", { style:{ marginBottom:"28px" } });
+      section.appendChild(el("div", { style:{ fontSize:"13px", fontWeight:"700", color:"#1a3a6b", letterSpacing:"2px", textTransform:"uppercase", fontFamily:"monospace", marginBottom:"12px" } }, title));
+
+      const listEl = el("div", { style:{ marginBottom:"12px" } });
+      function renderList() {
+        listEl.innerHTML = "";
+        items.forEach((item, i) => {
+          const row = el("div", { style:{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"8px" } },
+            el("div", { style:{ flex:"1", background:"#f5f5f5", border:"1px solid #e0e0e0", borderRadius:"8px", padding:"10px 14px", fontSize:"15px", color:"#111" } }, item),
+            (() => {
+              const b = el("button", { style:{ background:"none", border:"1px solid #e0303080", borderRadius:"8px", padding:"8px 12px", color:"#c0392b", cursor:"pointer", fontSize:"13px" } }, "✕");
+              b.addEventListener("click", () => { items.splice(i,1); saveFn([...items]); renderList(); });
+              return b;
+            })()
+          );
+          listEl.appendChild(row);
+        });
+        if (items.length === 0) {
+          listEl.appendChild(el("div", { style:{ color:"#aaa", fontSize:"13px", fontStyle:"italic", padding:"8px 0" } }, "None added yet."));
+        }
+      }
+      renderList();
+      section.appendChild(listEl);
+
+      // Add new item row
+      const inp = el("input", { type:"text", className:"input-field", placeholder, style:{ marginBottom:"8px" } });
+      const addBtn = el("button", { className:"gold-btn", style:{ width:"100%", padding:"11px" } }, "Add");
+      addBtn.addEventListener("click", () => {
+        const val = inp.value.trim();
+        if (!val) return;
+        if (items.includes(val)) { showToast("Already in list."); return; }
+        items.push(val);
+        saveFn([...items]);
+        inp.value = "";
+        renderList();
+      });
+      inp.addEventListener("keydown", e => { if (e.key === "Enter") addBtn.click(); });
+      section.append(inp, addBtn);
+      return section;
+    }
+
+    const driversCopy = [...state.drivers];
+    const vehiclesCopy = [...state.vehicles];
+
+    const sheet = el("div", { className:"modal-sheet" },
+      el("div", { className:"modal-handle" }),
+      el("div", { style:{ fontSize:"16px", fontWeight:"600", color:"#1a3a6b", marginBottom:"24px" } }, "⚙️ Settings"),
+      settingsSection("Drivers", driversCopy, (list) => { saveDrivers(list); setState({ drivers: list }); }, "e.g. James Smith"),
+      settingsSection("Vehicles", vehiclesCopy, (list) => { saveVehicles(list); setState({ vehicles: list }); }, "e.g. Mercedes E220d"),
+      (() => { const b = el("button", { className:"sec-btn", style:{ width:"100%" } }, "Close"); b.addEventListener("click", () => setState({ modal:null })); return b; })()
+    );
+    overlay.appendChild(sheet);
+    root.appendChild(overlay);
+  }
+
+  // ── Toast ──
+  if (toastMsg) {
+    root.appendChild(el("div", { className:"toast" }, "✦ " + toastMsg));
+  }
+}
+
+// ─── PWA: Show install banner on iOS if not already installed ─────────────────
+function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+function isInStandaloneMode() { return window.navigator.standalone === true; }
+window.addEventListener("load", () => {
+  if (isIOS() && !isInStandaloneMode()) {
+    setTimeout(() => { document.getElementById("install-banner").style.display = "block"; }, 2000);
+  }
+});
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
