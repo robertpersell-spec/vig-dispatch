@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VIG Executive Travel</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{margin:0;padding:0;font-family:Arial,sans-serif;font-size:14px;background:#f5f5f5;color:#111;}
+input,select,textarea,button{font-family:Arial,sans-serif;font-size:14px;}
+.gold-btn{background:#1a3a6b;color:#fff;border:none;border-radius:8px;padding:11px 20px;font-size:13px;font-weight:700;cursor:pointer;}
+.sec-btn{background:transparent;color:#1a3a6b;border:1px solid #1a3a6b;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;}
+.wa-btn{background:transparent;color:#25D366;border:1px solid #25D366;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;}
+.del-btn{background:transparent;color:#c0392b;border:1px solid #c0392b;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;}
+.input-field{width:100%;background:#fff;border:1.5px solid #d0d0d0;border-radius:8px;padding:11px 13px;color:#111;font-size:14px;outline:none;-webkit-appearance:none;appearance:none;}
+.input-field:focus{border-color:#1a3a6b;}
+select.input-field{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231a3a6b' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px;background-color:#fff;}
+.field-label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#1a3a6b;font-weight:700;margin-bottom:5px;}
+.field{margin-bottom:14px;}
+.badge{border-radius:20px;padding:3px 11px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;display:inline-block;}
+.card{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+.stat-box{background:#fff;border:1px solid #e8e8e8;border-radius:10px;padding:8px 5px;text-align:center;flex:1;min-width:0;}
+.filter-tab{background:#fff;color:#888;border:1px solid #ddd;border-radius:20px;padding:5px 12px;font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;white-space:nowrap;-webkit-appearance:none;}
+.filter-tab.active{background:#1a3a6b;color:#fff;border-color:#1a3a6b;}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1a3a6b;border-radius:12px;padding:12px 20px;color:#fff;font-size:13px;z-index:9999;white-space:nowrap;max-width:90vw;text-align:center;}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:100;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.sheet{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:640px;margin:60px auto 0;padding:20px 18px 60px;min-height:calc(100vh - 60px);}
+.modal-handle{width:40px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 18px;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.modal-title{font-size:16px;font-weight:700;color:#1a3a6b;}
+.back-btn{background:none;border:none;font-size:22px;cursor:pointer;color:#1a3a6b;padding:0 8px 0 0;line-height:1;}
+.close-btn{background:none;border:none;font-size:26px;cursor:pointer;color:#aaa;padding:0;line-height:1;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+function loadJobs(){try{var s=localStorage.getItem("vig_jobs");return s?JSON.parse(s):[];}catch(e){return[];}}
+function saveJobs(j){try{localStorage.setItem("vig_jobs",JSON.stringify(j));}catch(e){}}
+function loadList(k){try{var s=localStorage.getItem(k);return s?JSON.parse(s):[];}catch(e){return[];}}
+function saveList(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+var STATUS={
+  pending:{label:"Pending",color:"#b8860b",bg:"rgba(184,134,11,0.12)"},
+  confirmed:{label:"Confirmed",color:"#2e9e5b",bg:"rgba(46,158,91,0.12)"},
+  complete:{label:"Complete",color:"#8a6bbf",bg:"rgba(138,107,191,0.12)"},
+  cancelled:{label:"Cancelled",color:"#c0392b",bg:"rgba(192,57,43,0.12)"}
+};
+var FLOW={pending:["confirmed","cancelled"],confirmed:["complete","cancelled"],complete:[],cancelled:[]};
+var FLABELS={confirmed:"Confirm Job",complete:"Mark Complete",cancelled:"Cancel Job"};
+
+function loadClients(){try{var s=localStorage.getItem("vig_clients");return s?JSON.parse(s):[];}catch(e){return[];}}
+function saveClients(c){try{localStorage.setItem("vig_clients",JSON.stringify(c));}catch(e){}}
+
+var S={
+  jobs:loadJobs(),
+  drivers:loadList("vig_drivers"),
+  vehicles:loadList("vig_vehicles"),
+  clients:loadClients(),
+  filter:"confirmed",modal:null,ref:null,editing:false,toast:null,toastT:null
+};
+
+function set(patch){Object.assign(S,patch);draw();}
+function genRef(){return "VIG-"+Date.now().toString(36).toUpperCase().slice(-6);}
+
+function fmtDate(d){
+  if(!d)return "";
+  var p=d.split("-");
+  if(p.length!==3)return d;
+  var days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var dow=days[new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2])).getDay()];
+  return dow+" "+p[2]+"/"+p[1]+"/"+p[0];
+}
+
+function showToast(msg){
+  if(S.toastT)clearTimeout(S.toastT);
+  var t=setTimeout(function(){set({toast:null,toastT:null});},3500);
+  set({toast:msg,toastT:t});
+}
+
+function badge(status){
+  var cfg=STATUS[status]||STATUS.pending;
+  var b=document.createElement("span");
+  b.className="badge";
+  b.style.cssText="background:"+cfg.bg+";color:"+cfg.color+";border:1px solid "+cfg.color+"40;";
+  b.textContent=cfg.label;
+  return b;
+}
+
+function field(labelTxt,inputEl){
+  var d=document.createElement("div");d.className="field";
+  var l=document.createElement("label");l.className="field-label";l.textContent=labelTxt;
+  d.appendChild(l);d.appendChild(inputEl);
+  return d;
+}
+
+function inp(type,key,ph,f){
+  var i=document.createElement("input");
+  i.type=type;i.className="input-field";i.placeholder=ph||"";i.value=f[key]||"";
+  i.addEventListener("input",function(e){f[key]=e.target.value;});
+  return i;
+}
+
+function selInp(key,options,f){
+  var s=document.createElement("select");s.className="input-field";
+  var blank=document.createElement("option");blank.value="";blank.textContent="Select...";s.appendChild(blank);
+  options.forEach(function(o){
+    var opt=document.createElement("option");opt.value=o;opt.textContent=o;
+    if(f[key]===o)opt.selected=true;
+    s.appendChild(opt);
+  });
+  s.addEventListener("change",function(e){f[key]=e.target.value;});
+  return s;
+}
+
+function exportCSV(){
+  var jobs=S.jobs;
+  if(!jobs.length){showToast("No bookings to export.");return;}
+  var headers=["Ref","Client","Phone","Email","Date","Time","Pickup","Dropoff","Flight No","From","Passengers","Vehicle","Driver","Fare","Payment","Invoiced","Paid","Sub Driver","Status","Notes"];
+  var rows=[headers];
+  jobs.forEach(function(j){
+    rows.push([j.ref||"",j.clientName||"",j.clientPhone||"",j.clientEmail||"",j.date||"",j.time||"",j.pickup||"",j.dropoff||"",j.flightNo||"",j.flightFrom||"",j.passengers||"",j.vehicle||"",j.driverName||"",j.price||"",j.paymentType||"",j.invoiced?"Yes":"No",j.paid?"Yes":"No",j.subDriver?"Yes":"No",j.status||"",j.notes||""]);
+  });
+  var csv=rows.map(function(row){
+    return row.map(function(cell){
+      var s=String(cell).replace(/"/g,"''");
+      return s.indexOf(",")>-1?'"'+s+'"':s;
+    }).join(",");
+  }).join("\r\n");
+  var blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");
+  a.href=url;a.download="VIG-Bookings-"+new Date().toISOString().slice(0,10)+".csv";
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+  showToast("Exported "+jobs.length+" bookings.");
+}
+
+function addToCalendar(job){
+  var p=job.date.split("-"),tp=(job.time||"00:00").split(":");
+  var start=new Date(p[0],p[1]-1,p[2],tp[0],tp[1]);
+  var end=new Date(start.getTime()+3600000);
+  function fmt(d){return d.toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";}
+  var details="Date: "+fmtDate(job.date)+"\nClient: "+job.clientName+"\nPhone: "+(job.clientPhone||"N/A")+"\nPassengers: "+(job.passengers||1)+"\nTime: "+job.time+"\nPick up: "+job.pickup+"\nDrop off: "+job.dropoff+"\nFlight No: "+(job.flightNo||"N/A")+"\nDriver: "+(job.driverName||"N/A")+"\nVehicle: "+(job.vehicle||"N/A")+"\nFare: "+job.price+"\nNotes: "+(job.notes||"None");
+  var gcalUrl="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent("VIG Transfer - "+job.clientName)+"&dates="+fmt(start)+"/"+fmt(end)+"&location="+encodeURIComponent(job.pickup+" to "+job.dropoff)+"&details="+encodeURIComponent(details);
+  var old=document.getElementById("cal-popup");if(old)old.remove();
+  var ov=document.createElement("div");ov.id="cal-popup";ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;";
+  var box=document.createElement("div");box.style.cssText="background:#fff;border-radius:16px;padding:26px 22px;max-width:320px;width:100%;text-align:center;";
+  var t=document.createElement("div");t.style.cssText="font-size:16px;font-weight:700;color:#1a3a6b;margin-bottom:8px;";t.textContent="Add to Calendar";
+  var s=document.createElement("div");s.style.cssText="font-size:13px;color:#555;margin-bottom:20px;";s.textContent="Tap a button to add this booking";
+  var ga=document.createElement("a");ga.href=gcalUrl;ga.target="_blank";ga.style.cssText="display:block;background:#1a3a6b;color:#fff;font-weight:700;font-size:14px;padding:13px 20px;border-radius:10px;text-decoration:none;margin-bottom:10px;";ga.textContent="Add to Google Calendar";
+  var cp=document.createElement("button");cp.style.cssText="display:block;width:100%;background:#f0f4ff;border:1px solid #c0cce8;color:#1a3a6b;font-weight:700;font-size:14px;padding:13px 20px;border-radius:10px;cursor:pointer;margin-bottom:14px;";cp.textContent="Copy Event Details";
+  cp.onclick=function(){navigator.clipboard.writeText("VIG Transfer - "+job.clientName+"\n"+details).then(function(){cp.textContent="Copied!";setTimeout(function(){cp.textContent="Copy Event Details";},2000);});};
+  var can=document.createElement("button");can.style.cssText="background:none;border:none;color:#888;font-size:13px;cursor:pointer;padding:8px;";can.textContent="Cancel";
+  can.onclick=function(){ov.remove();};ov.onclick=function(e){if(e.target===ov)ov.remove();};
+  box.appendChild(t);box.appendChild(s);box.appendChild(ga);box.appendChild(cp);box.appendChild(can);ov.appendChild(box);document.body.appendChild(ov);
+}
+
+function sendWhatsApp(job){
+  var msg=job.subDriver?
+    "*VIG Executive Travel - Sub Driver Job*\n\nHi "+(job.driverName||"Driver")+", please see job details below.\n\nRef: "+job.ref+"\nDate: "+fmtDate(job.date)+" at "+job.time+"\nPickup: "+job.pickup+"\nDrop-off: "+job.dropoff+"\nClient: "+job.clientName+"\nClient Phone: "+(job.clientPhone||"N/A")+"\nFlight No: "+(job.flightNo||"N/A")+"\nFrom: "+(job.flightFrom||"N/A")+"\nPassengers: "+(job.passengers||1)+"\nYour Rate: "+job.price+"\nNotes: "+(job.notes||"None")+"\n\nPlease confirm you can accept this job."
+    :
+    "*VIG Executive Travel*\n\nRef: "+job.ref+"\nClient: "+job.clientName+"\nPhone: "+(job.clientPhone||"N/A")+"\nDate: "+fmtDate(job.date)+" at "+job.time+"\nPickup: "+job.pickup+"\nDrop-off: "+job.dropoff+"\nFlight No: "+(job.flightNo||"N/A")+"\nFrom: "+(job.flightFrom||"N/A")+"\nFare: "+job.price+"\nPassengers: "+(job.passengers||1)+"\nNotes: "+(job.notes||"None")+"\n\nPlease confirm receipt.";
+  var a=document.createElement("a");a.href="https://wa.me/?text="+encodeURIComponent(msg);a.target="_blank";a.rel="noopener";
+  document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a);},500);
+}
+
+function renderForm(initial,onSave,onCancel){
+  var f=initial?JSON.parse(JSON.stringify(initial)):{clientName:"",clientEmail:"",clientPhone:"",pickup:"",dropoff:"",date:"",time:"",price:"",flightNo:"",flightFrom:"",vehicle:"",driverName:"",notes:"",passengers:"1",subDriver:false,paymentType:"",invoiced:false,paid:false};
+  var wrap=document.createElement("div");
+  var saveBtn=document.createElement("button");saveBtn.className="gold-btn";saveBtn.textContent=initial?"Save Changes":"Create Booking";saveBtn.disabled=true;saveBtn.style.opacity="0.4";
+  function chk(){var ok=f.clientName&&f.pickup&&f.dropoff&&f.date&&f.time&&f.price;saveBtn.disabled=!ok;saveBtn.style.opacity=ok?"1":"0.4";}
+  function ti(type,key,ph){var i=inp(type,key,ph,f);i.addEventListener("input",chk);return i;}
+
+  // Client selector dropdown (only show if there are saved clients and creating new)
+  var clientSelectRow=null;
+  var nameInput=ti("text","clientName","Full name");
+  var phoneInput=ti("tel","clientPhone","+44...");
+  var emailInput=ti("email","clientEmail","email@example.com");
+  if(S.clients.length){
+    var csel=document.createElement("select");csel.className="input-field";
+    var cblank=document.createElement("option");cblank.value="";cblank.textContent="-- New client / select saved --";csel.appendChild(cblank);
+    S.clients.forEach(function(c,i){
+      var opt=document.createElement("option");opt.value=String(i);opt.textContent=c.name+(c.phone?" ("+c.phone+")":"");
+      csel.appendChild(opt);
+    });
+    csel.addEventListener("change",function(e){
+      if(e.target.value===""){return;}
+      var c=S.clients[parseInt(e.target.value)];
+      if(c){
+        f.clientName=c.name;f.clientPhone=c.phone||"";f.clientEmail=c.email||"";
+        nameInput.value=c.name;phoneInput.value=c.phone||"";emailInput.value=c.email||"";
+        chk();
+      }
+    });
+    clientSelectRow=document.createElement("div");clientSelectRow.className="field";
+    var csl=document.createElement("label");csl.className="field-label";csl.textContent="Select Saved Client";
+    clientSelectRow.appendChild(csl);clientSelectRow.appendChild(csel);
+  }
+
+  var r1=document.createElement("div");r1.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;";
+  r1.appendChild(field("Client Name",nameInput));
+  r1.appendChild(field("Phone",phoneInput));
+  r1.appendChild(field("Email",emailInput));
+  r1.appendChild(field("Passengers",ti("number","passengers","1")));
+
+  // Save client checkbox
+  var saveClientRow=document.createElement("div");saveClientRow.style.cssText="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 12px;background:#f0f4ff;border:1px solid #c0cce8;border-radius:8px;";
+  var scChk=document.createElement("input");scChk.type="checkbox";scChk.style.cssText="width:18px;height:18px;cursor:pointer;";
+  scChk.addEventListener("change",function(){f._saveClient=scChk.checked;});
+  var scLbl=document.createElement("label");scLbl.style.cssText="font-size:14px;font-weight:700;color:#1a3a6b;";scLbl.textContent="Save this client for future bookings";
+  saveClientRow.appendChild(scChk);saveClientRow.appendChild(scLbl);
+
+  var r2=document.createElement("div");r2.style.cssText="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px;";
+  r2.appendChild(field("Date",ti("date","date","")));
+  r2.appendChild(field("Time",ti("time","time","")));
+  r2.appendChild(field("Fare",ti("number","price","0.00")));
+
+  var r2b=document.createElement("div");r2b.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;";
+  r2b.appendChild(field("Flight No",ti("text","flightNo","e.g. BA106")));
+  r2b.appendChild(field("From",ti("text","flightFrom","e.g. New York JFK")));
+
+  var r3=document.createElement("div");r3.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;";
+  var vEl=S.vehicles.length?selInp("vehicle",S.vehicles,f):ti("text","vehicle","Add in Settings");
+  var dEl=S.drivers.length?selInp("driverName",S.drivers,f):ti("text","driverName","Add in Settings");
+  r3.appendChild(field("Vehicle",vEl));r3.appendChild(field("Driver",dEl));
+
+  var subRow=document.createElement("div");subRow.style.cssText="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:12px;background:#fff8f0;border:1px solid #f0d0a0;border-radius:8px;";
+  var subChk=document.createElement("input");subChk.type="checkbox";subChk.style.cssText="width:18px;height:18px;cursor:pointer;";
+  if(f.subDriver)subChk.checked=true;
+  subChk.addEventListener("change",function(){f.subDriver=subChk.checked;});
+  var subLbl=document.createElement("label");subLbl.style.cssText="font-size:14px;font-weight:700;color:#1a3a6b;";subLbl.textContent="Sub Driver";
+  subRow.appendChild(subChk);subRow.appendChild(subLbl);
+
+  // Payment method
+  var payRow=document.createElement("div");payRow.style.marginBottom="14px";
+  var payLbl=document.createElement("label");payLbl.className="field-label";payLbl.textContent="Payment Method";
+  var paySel=document.createElement("select");paySel.className="input-field";
+  ["","Cash","Card","Transfer","Account"].forEach(function(o){
+    var opt=document.createElement("option");opt.value=o;opt.textContent=o||"Select...";
+    if(f.paymentType===o)opt.selected=true;
+    paySel.appendChild(opt);
+  });
+  var accountBoxes=document.createElement("div");
+  accountBoxes.style.cssText="display:block;background:#f0f4ff;border:1px solid #c0cce8;border-radius:8px;padding:12px;margin-top:10px;";
+  var invRow=document.createElement("div");invRow.style.cssText="display:flex;align-items:center;gap:10px;margin-bottom:10px;";
+  var invChk=document.createElement("input");invChk.type="checkbox";invChk.style.cssText="width:18px;height:18px;cursor:pointer;";
+  if(f.invoiced)invChk.checked=true;
+  invChk.addEventListener("change",function(){f.invoiced=invChk.checked;});
+  var invLbl=document.createElement("label");invLbl.style.cssText="font-size:14px;font-weight:700;color:#1a3a6b;";invLbl.textContent="Invoice Sent";
+  invRow.appendChild(invChk);invRow.appendChild(invLbl);
+  var paidRow=document.createElement("div");paidRow.style.cssText="display:flex;align-items:center;gap:10px;";
+  var paidChk=document.createElement("input");paidChk.type="checkbox";paidChk.style.cssText="width:18px;height:18px;cursor:pointer;";
+  if(f.paid)paidChk.checked=true;
+  paidChk.addEventListener("change",function(){f.paid=paidChk.checked;});
+  var paidLbl=document.createElement("label");paidLbl.style.cssText="font-size:14px;font-weight:700;color:#2e9e5b;";paidLbl.textContent="Paid";
+  paidRow.appendChild(paidChk);paidRow.appendChild(paidLbl);
+  accountBoxes.appendChild(invRow);accountBoxes.appendChild(paidRow);
+  paySel.addEventListener("change",function(e){f.paymentType=e.target.value;});
+  payRow.appendChild(payLbl);payRow.appendChild(paySel);payRow.appendChild(accountBoxes);
+
+  var ta=document.createElement("textarea");ta.className="input-field";ta.placeholder="Meet and greet, luggage, notes...";ta.style.minHeight="65px";ta.value=f.notes||"";
+  ta.addEventListener("input",function(e){f.notes=e.target.value;});
+  var canBtn=document.createElement("button");canBtn.className="sec-btn";canBtn.textContent="Cancel";canBtn.addEventListener("click",onCancel);
+  saveBtn.addEventListener("click",function(){onSave(Object.assign({},f,{ref:initial?initial.ref:genRef()}));});
+  var bRow=document.createElement("div");bRow.style.cssText="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;";
+  bRow.appendChild(canBtn);bRow.appendChild(saveBtn);
+
+  if(clientSelectRow)wrap.appendChild(clientSelectRow);
+  wrap.appendChild(r1);
+  wrap.appendChild(saveClientRow);
+  wrap.appendChild(field("Pickup Address",ti("text","pickup","Full pickup address")));
+  wrap.appendChild(field("Drop-off Address",ti("text","dropoff","Full destination address")));
+  wrap.appendChild(r2);wrap.appendChild(r2b);wrap.appendChild(r3);wrap.appendChild(subRow);
+  wrap.appendChild(payRow);
+  wrap.appendChild(field("Notes",ta));wrap.appendChild(bRow);
+  chk();
+  return wrap;
+}
+
+function renderDetail(job){
+  var wrap=document.createElement("div");
+  if(S.editing){
+    wrap.appendChild(renderForm(job,function(u){
+      var jobs=S.jobs.map(function(j){return j.ref===u.ref?Object.assign({},u,{status:job.status}):j;});
+      saveJobs(jobs);set({jobs:jobs,editing:false});showToast("Booking updated.");
+    },function(){set({editing:false});}));
+    return wrap;
+  }
+  var hdr=document.createElement("div");hdr.style.cssText="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;";
+  hdr.appendChild(badge(job.status));
+  if(job.subDriver){var sb=document.createElement("span");sb.className="badge";sb.style.cssText="background:rgba(255,140,0,0.15);color:#e07000;border:1px solid rgba(255,140,0,0.4);";sb.textContent="SUB DRIVER";hdr.appendChild(sb);}
+  var ref=document.createElement("span");ref.style.cssText="font-size:11px;color:#888;font-family:monospace;";ref.textContent=job.ref;hdr.appendChild(ref);
+  wrap.appendChild(hdr);
+
+  var grid=document.createElement("div");grid.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;";
+  [["Client",job.clientName],["Phone",job.clientPhone||"-"],["Email",job.clientEmail||"-"],["Passengers",job.passengers||1],["Date",fmtDate(job.date)],["Time",job.time],["Pickup",job.pickup],["Drop-off",job.dropoff],["Vehicle",job.vehicle||"-"],["Driver",job.driverName||"-"],["Flight No",job.flightNo||"-"],["From",job.flightFrom||"-"]].forEach(function(pair){
+    var d=document.createElement("div");
+    var k=document.createElement("div");k.style.cssText="font-size:10px;letter-spacing:2px;color:#1a3a6b;font-weight:700;text-transform:uppercase;margin-bottom:2px;";k.textContent=pair[0];
+    var v=document.createElement("div");v.style.cssText="font-size:13px;color:#111;";v.textContent=String(pair[1]);
+    d.appendChild(k);d.appendChild(v);grid.appendChild(d);
+  });
+  wrap.appendChild(grid);
+
+  var fb=document.createElement("div");fb.style.cssText="background:#f0f4ff;border:1px solid #c0cce8;border-radius:10px;padding:12px 16px;margin-bottom:14px;";
+  var fl=document.createElement("div");fl.style.cssText="font-size:10px;letter-spacing:2px;color:#1a3a6b;font-weight:700;text-transform:uppercase;";fl.textContent="FARE";
+  var fv=document.createElement("div");fv.style.cssText="font-size:26px;color:#1a3a6b;font-weight:700;";fv.textContent="£"+job.price;
+  fb.appendChild(fl);fb.appendChild(fv);wrap.appendChild(fb);
+
+  if(job.paymentType){
+    var pb=document.createElement("div");pb.style.cssText="background:#f9f9f9;border:1px solid #e8e8e8;border-radius:8px;padding:10px 13px;margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;";
+    var pl=document.createElement("div");
+    var plk=document.createElement("div");plk.style.cssText="font-size:10px;letter-spacing:2px;color:#1a3a6b;font-weight:700;text-transform:uppercase;margin-bottom:2px;";plk.textContent="PAYMENT";
+    var plv=document.createElement("div");plv.style.cssText="font-size:14px;font-weight:700;color:#111;";plv.textContent=job.paymentType;
+    pl.appendChild(plk);pl.appendChild(plv);pb.appendChild(pl);
+    if(job.invoiced){var inv=document.createElement("span");inv.className="badge";inv.style.cssText="background:rgba(26,58,107,0.1);color:#1a3a6b;";inv.textContent="Invoice Sent";pb.appendChild(inv);}
+    var paidBadge=document.createElement("span");paidBadge.className="badge";
+    if(job.paid){paidBadge.style.cssText="background:rgba(46,158,91,0.15);color:#2e9e5b;";paidBadge.textContent="Paid";}
+    else{paidBadge.style.cssText="background:rgba(192,57,43,0.1);color:#c0392b;";paidBadge.textContent="Unpaid";}
+    pb.appendChild(paidBadge);
+    wrap.appendChild(pb);
+  }
+
+  if(job.notes){
+    var nb=document.createElement("div");nb.style.cssText="background:#f9f9f9;border:1px solid #e8e8e8;border-radius:8px;padding:10px 13px;margin-bottom:14px;";
+    var nl=document.createElement("div");nl.style.cssText="font-size:10px;letter-spacing:2px;color:#1a3a6b;font-weight:700;text-transform:uppercase;margin-bottom:4px;";nl.textContent="NOTES";
+    var nv=document.createElement("div");nv.style.cssText="font-size:13px;color:#444;";nv.textContent=job.notes;
+    nb.appendChild(nl);nb.appendChild(nv);wrap.appendChild(nb);
+  }
+
+  var actions=FLOW[job.status]||[];
+  if(actions.length){
+    var ar=document.createElement("div");ar.style.cssText="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;";
+    actions.forEach(function(s){
+      var b=document.createElement("button");b.className=s==="cancelled"?"sec-btn":"gold-btn";b.textContent=FLABELS[s];
+      b.addEventListener("click",function(){
+        var jobs=S.jobs.map(function(j){return j.ref===job.ref?Object.assign({},j,{status:s}):j;});
+        saveJobs(jobs);set({jobs:jobs,ref:job.ref});
+        showToast({confirmed:"Confirmed.",complete:"Complete.",cancelled:"Cancelled."}[s]);
+      });
+      ar.appendChild(b);
+    });
+    wrap.appendChild(ar);
+  }
+
+  var util=document.createElement("div");util.style.cssText="display:flex;gap:8px;flex-wrap:wrap;";
+  var eb=document.createElement("button");eb.className="sec-btn";eb.textContent="Edit Booking";eb.addEventListener("click",function(){set({editing:true});});
+  var cb=document.createElement("button");cb.className="sec-btn";cb.textContent="Add to Calendar";
+  cb.addEventListener("touchend",function(e){e.preventDefault();addToCalendar(job);});
+  cb.addEventListener("click",function(e){e.preventDefault();addToCalendar(job);});
+  var wb=document.createElement("button");wb.className="wa-btn";wb.textContent="Send via WhatsApp";
+  wb.addEventListener("click",function(){sendWhatsApp(job);});
+  var db=document.createElement("button");db.className="del-btn";db.textContent="Delete Job";
+  db.addEventListener("click",function(){
+    if(confirm("Delete this booking permanently?")){
+      var jobs=S.jobs.filter(function(j){return j.ref!==job.ref;});
+      saveJobs(jobs);set({jobs:jobs,modal:null,ref:null});showToast("Booking deleted.");
+    }
+  });
+  util.appendChild(eb);util.appendChild(cb);util.appendChild(wb);util.appendChild(db);
+  wrap.appendChild(util);
+  return wrap;
+}
+
+function renderSettings(){
+  var wrap=document.createElement("div");
+  function section(title,listKey,placeholder){
+    var items=S[listKey].slice();
+    var sec=document.createElement("div");sec.style.marginBottom="26px";
+    var h=document.createElement("div");h.style.cssText="font-size:11px;font-weight:700;color:#1a3a6b;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;";h.textContent=title;
+    sec.appendChild(h);
+    var listEl=document.createElement("div");listEl.style.marginBottom="10px";
+    function renderList(){
+      listEl.innerHTML="";
+      if(!items.length){var e=document.createElement("div");e.style.cssText="color:#aaa;font-size:13px;font-style:italic;";e.textContent="None added yet.";listEl.appendChild(e);return;}
+      items.forEach(function(item,i){
+        var row=document.createElement("div");row.style.cssText="display:flex;align-items:center;gap:8px;margin-bottom:8px;";
+        var txt=document.createElement("div");txt.style.cssText="flex:1;background:#f5f5f5;border:1px solid #e0e0e0;border-radius:8px;padding:9px 13px;font-size:14px;";txt.textContent=item;
+        var del=document.createElement("button");del.style.cssText="background:none;border:1px solid #c0392b;border-radius:8px;padding:7px 11px;color:#c0392b;cursor:pointer;font-size:13px;";del.textContent="x";
+        del.addEventListener("click",function(){items.splice(i,1);saveList("vig_"+listKey,items.slice());S[listKey]=items.slice();renderList();});
+        row.appendChild(txt);row.appendChild(del);listEl.appendChild(row);
+      });
+    }
+    renderList();sec.appendChild(listEl);
+    var ai=document.createElement("input");ai.type="text";ai.className="input-field";ai.placeholder=placeholder;ai.style.marginBottom="8px";
+    var ab=document.createElement("button");ab.className="gold-btn";ab.style.width="100%";ab.style.padding="11px";ab.textContent="Add";
+    ab.addEventListener("click",function(){
+      var val=ai.value.trim();if(!val)return;
+      if(items.indexOf(val)>-1){showToast("Already in list.");return;}
+      items.push(val);saveList("vig_"+listKey,items.slice());S[listKey]=items.slice();ai.value="";renderList();
+    });
+    ai.addEventListener("keydown",function(e){if(e.key==="Enter")ab.click();});
+    sec.appendChild(ai);sec.appendChild(ab);
+    return sec;
+  }
+  wrap.appendChild(section("Drivers","drivers","e.g. James Smith"));
+  wrap.appendChild(section("Vehicles","vehicles","e.g. Mercedes E220d"));
+
+  // Clients section
+  var cliSec=document.createElement("div");cliSec.style.marginBottom="26px";
+  var ch=document.createElement("div");ch.style.cssText="font-size:11px;font-weight:700;color:#1a3a6b;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;";ch.textContent="Saved Clients";
+  cliSec.appendChild(ch);
+  var cliList=document.createElement("div");
+  var clients=S.clients.slice();
+  function renderClients(){
+    cliList.innerHTML="";
+    if(!clients.length){var e=document.createElement("div");e.style.cssText="color:#aaa;font-size:13px;font-style:italic;";e.textContent="No saved clients yet. Tick 'Save this client' when creating a booking.";cliList.appendChild(e);return;}
+    clients.forEach(function(c,i){
+      var row=document.createElement("div");row.style.cssText="display:flex;align-items:center;gap:8px;margin-bottom:8px;";
+      var txt=document.createElement("div");txt.style.cssText="flex:1;background:#f5f5f5;border:1px solid #e0e0e0;border-radius:8px;padding:9px 13px;font-size:14px;";
+      txt.textContent=c.name+(c.phone?" — "+c.phone:"");
+      var del=document.createElement("button");del.style.cssText="background:none;border:1px solid #c0392b;border-radius:8px;padding:7px 11px;color:#c0392b;cursor:pointer;font-size:13px;";del.textContent="x";
+      del.addEventListener("click",function(){clients.splice(i,1);saveClients(clients.slice());S.clients=clients.slice();renderClients();});
+      row.appendChild(txt);row.appendChild(del);cliList.appendChild(row);
+    });
+  }
+  renderClients();
+  cliSec.appendChild(cliList);
+  wrap.appendChild(cliSec);
+
+  var cl=document.createElement("button");cl.className="sec-btn";cl.style.width="100%";cl.textContent="Close";
+  cl.addEventListener("click",function(){set({modal:null});});
+  wrap.appendChild(cl);
+  return wrap;
+}
+
+function makeModal(titleTxt,content,onClose){
+  var overlay=document.createElement("div");overlay.className="overlay";
+  overlay.addEventListener("click",function(e){if(e.target===overlay)onClose();});
+  var sheet=document.createElement("div");sheet.className="sheet";
+  var handle=document.createElement("div");handle.className="modal-handle";
+  var hdr=document.createElement("div");hdr.className="modal-header";
+  var left=document.createElement("div");left.style.cssText="display:flex;align-items:center;gap:8px;";
+  var back=document.createElement("button");back.className="back-btn";back.textContent="<";back.addEventListener("click",onClose);
+  var ttl=document.createElement("div");ttl.className="modal-title";ttl.textContent=titleTxt;
+  left.appendChild(back);left.appendChild(ttl);
+  var closeX=document.createElement("button");closeX.className="close-btn";closeX.textContent="x";closeX.addEventListener("click",onClose);
+  hdr.appendChild(left);hdr.appendChild(closeX);
+  sheet.appendChild(handle);sheet.appendChild(hdr);sheet.appendChild(content);
+  overlay.appendChild(sheet);
+  return overlay;
+}
+
+function draw(){
+  var root=document.getElementById("root");root.innerHTML="";
+  var jobs=S.jobs,filter=S.filter;
+  var counts={};Object.keys(STATUS).forEach(function(s){counts[s]=jobs.filter(function(j){return j.status===s;}).length;});
+
+  var hdr=document.createElement("div");hdr.style.cssText="background:#1a3a6b;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;";
+  var logo=document.createElement("div");logo.style.cssText="display:flex;align-items:center;gap:10px;";
+  var vb=document.createElement("div");vb.style.cssText="width:38px;height:38px;background:#000;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;";
+  var vt=document.createElement("span");vt.style.cssText="color:#fff;font-size:12px;font-weight:900;letter-spacing:1px;";vt.textContent="VIG";
+  vb.appendChild(vt);
+  var tt=document.createElement("div");
+  var t1=document.createElement("div");t1.style.cssText="font-size:14px;font-weight:700;color:#fff;";t1.textContent="VIG Executive Travel";
+  var t2=document.createElement("div");t2.style.cssText="font-size:9px;color:rgba(255,255,255,0.5);letter-spacing:2px;";t2.textContent="DISPATCH MANAGEMENT";
+  tt.appendChild(t1);tt.appendChild(t2);logo.appendChild(vb);logo.appendChild(tt);
+  var btns=document.createElement("div");btns.style.cssText="display:flex;gap:6px;flex-shrink:0;";
+  var nb=document.createElement("button");nb.style.cssText="background:#fff;color:#1a3a6b;border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;";nb.textContent="+ New";
+  nb.addEventListener("click",function(){set({modal:"new",editing:false});});
+  var expBtn=document.createElement("button");expBtn.style.cssText="background:none;border:1px solid rgba(255,255,255,0.4);border-radius:8px;color:#fff;padding:8px 10px;cursor:pointer;font-size:13px;";expBtn.textContent="Export";
+  expBtn.addEventListener("click",function(){exportCSV();});
+  var sb=document.createElement("button");sb.style.cssText="background:none;border:1px solid rgba(255,255,255,0.4);border-radius:8px;color:#fff;padding:8px 10px;cursor:pointer;font-size:13px;";sb.textContent="Settings";
+  sb.addEventListener("click",function(){set({modal:"settings"});});
+  btns.appendChild(nb);btns.appendChild(expBtn);btns.appendChild(sb);hdr.appendChild(logo);hdr.appendChild(btns);
+
+  var sr=document.createElement("div");sr.style.cssText="display:flex;gap:8px;padding:12px 14px;overflow-x:auto;background:#f5f5f5;";
+  [{l:"Total",v:jobs.length,c:"#111"},{l:"Pndg",v:counts.pending,c:"#b8860b"},{l:"Conf",v:counts.confirmed,c:"#2e9e5b"},{l:"Done",v:counts.complete,c:"#8a6bbf"},{l:"Cncl",v:counts.cancelled,c:"#c0392b"}].forEach(function(s){
+    var b=document.createElement("div");b.className="stat-box";
+    var val=document.createElement("div");val.style.cssText="font-size:18px;font-weight:700;color:"+s.c+";";val.textContent=String(s.v);
+    var lbl=document.createElement("div");lbl.style.cssText="font-size:8px;color:#555;letter-spacing:0.5px;text-transform:uppercase;margin-top:2px;font-family:monospace;";lbl.textContent=s.l;
+    b.appendChild(val);b.appendChild(lbl);sr.appendChild(b);
+  });
+
+  var fr=document.createElement("div");fr.style.cssText="display:flex;gap:6px;padding:8px 14px 10px;overflow-x:auto;background:#f5f5f5;";
+  ["all"].concat(Object.keys(STATUS)).forEach(function(s){
+    var b=document.createElement("button");b.className="filter-tab"+(filter===s?" active":"");
+    b.textContent=s==="all"?"All":STATUS[s].label;
+    b.addEventListener("click",function(){set({filter:s});});
+    fr.appendChild(b);
+  });
+
+  var cl=document.createElement("div");cl.style.cssText="padding:10px 14px 40px;";
+  var filtered=filter==="all"?jobs:jobs.filter(function(j){return j.status===filter;});
+  filtered=filtered.slice().sort(function(a,b){
+    var da=a.date||"9999-12-31",db=b.date||"9999-12-31";
+    if(da!==db)return da<db?-1:1;
+    return (a.time||"").localeCompare(b.time||"");
+  });
+  if(!filtered.length){
+    var empty=document.createElement("div");empty.style.cssText="text-align:center;color:#aaa;padding:60px 0;font-style:italic;";empty.textContent="No bookings found.";cl.appendChild(empty);
+  }
+  filtered.forEach(function(job){
+    var card=document.createElement("div");card.className="card";
+    var top=document.createElement("div");top.style.cssText="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;";
+    var info=document.createElement("div");
+    var refEl=document.createElement("div");refEl.style.cssText="font-family:monospace;font-size:10px;color:#1a3a6b;letter-spacing:2px;";refEl.textContent=job.ref;
+    var nameEl=document.createElement("div");nameEl.style.cssText="font-size:15px;font-weight:600;margin-top:2px;color:#111;";nameEl.textContent=job.clientName;
+    info.appendChild(refEl);info.appendChild(nameEl);top.appendChild(info);top.appendChild(badge(job.status));
+    var det=document.createElement("div");det.style.cssText="font-size:12px;color:#666;display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;";
+    [job.pickup,job.dropoff,fmtDate(job.date)+" "+job.time,job.driverName||"Unassigned"].forEach(function(t){
+      var s=document.createElement("span");s.textContent=t;det.appendChild(s);
+    });
+    var bot=document.createElement("div");bot.style.cssText="margin-top:8px;display:flex;justify-content:space-between;align-items:center;";
+    var price=document.createElement("span");price.style.cssText="font-family:monospace;font-size:13px;color:#1a3a6b;font-weight:700;";price.textContent="£"+job.price;
+    var veh=document.createElement("span");veh.style.cssText="font-size:11px;color:#888;";veh.textContent=job.vehicle||"";
+    bot.appendChild(price);bot.appendChild(veh);
+    card.appendChild(top);card.appendChild(det);card.appendChild(bot);
+    card.addEventListener("click",function(){set({modal:"detail",ref:job.ref,editing:false});});
+    cl.appendChild(card);
+  });
+
+  root.appendChild(hdr);root.appendChild(sr);root.appendChild(fr);root.appendChild(cl);
+
+  if(S.modal==="new"){
+    root.appendChild(makeModal("New Booking",renderForm(null,function(job){
+      // Save client if requested
+      if(job._saveClient&&job.clientName){
+        var exists=S.clients.some(function(c){return c.name===job.clientName&&c.phone===job.clientPhone;});
+        if(!exists){
+          var clients=S.clients.concat([{name:job.clientName,phone:job.clientPhone||"",email:job.clientEmail||""}]);
+          saveClients(clients);S.clients=clients;
+        }
+      }
+      delete job._saveClient;
+      var jobs=[Object.assign({},job,{status:"pending"})].concat(S.jobs);
+      saveJobs(jobs);set({jobs:jobs,modal:null});showToast("Booking "+job.ref+" created.");
+    },function(){set({modal:null});}),function(){set({modal:null});}));
+  }
+  if(S.modal==="detail"&&S.ref){
+    var job=jobs.find(function(j){return j.ref===S.ref;});
+    if(job)root.appendChild(makeModal("Booking — "+job.ref,renderDetail(job),function(){set({modal:null,editing:false});}));
+  }
+  if(S.modal==="settings"){
+    root.appendChild(makeModal("Settings",renderSettings(),function(){set({modal:null});}));
+  }
+  if(S.toast){
+    var toast=document.createElement("div");toast.className="toast";toast.textContent=S.toast;root.appendChild(toast);
+  }
+}
+
+draw();
+</script>
+</body>
+</html>
