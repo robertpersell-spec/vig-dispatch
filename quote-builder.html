@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIG Quote Builder</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#0B0F0D; --panel:#151A17; --panel-2:#1C231F; --line:#2A332D;
+    --text:#EDEFEC; --muted:#8B978E; --green:#2FAF6B; --green-soft:#248055; --red:#C9634B;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;padding:24px 14px 60px;}
+  .wrap{max-width:560px;margin:0 auto;}
+
+  header{margin-bottom:22px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;letter-spacing:.18em;font-size:11px;color:var(--green);text-transform:uppercase;margin-bottom:6px;}
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:28px;margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:13.5px;line-height:1.5;}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;margin-bottom:16px;}
+  h3{font-family:'Fraunces',serif;font-size:15px;font-weight:600;margin:0 0 12px;color:var(--green);}
+
+  label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px;}
+  label:first-child{margin-top:0;}
+  input[type=text], input[type=date], input[type=time], input[type=tel]{
+    width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);
+    border-radius:7px;padding:11px 12px;font-family:'Inter',sans-serif;font-size:14.5px;
+  }
+  input:focus{outline:2px solid var(--green);outline-offset:1px;}
+  .row2{display:flex;gap:10px;}
+  .row2>div{flex:1;}
+
+  .addr-field{position:relative;margin-bottom:2px;}
+  .addr-row{display:flex;gap:8px;align-items:flex-start;}
+  .addr-row .addr-field{flex:1;}
+  .remove-stop{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--red);
+    border-radius:7px;padding:0 12px;font-size:16px;cursor:pointer;margin-top:6px;height:42px;
+  }
+  .suggestions{
+    position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--panel-2);
+    border:1px solid var(--line);border-radius:7px;z-index:20;max-height:210px;overflow-y:auto;display:none;
+  }
+  .suggestions.open{display:block;}
+  .suggestions div{padding:10px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--line);}
+  .suggestions div:last-child{border-bottom:none;}
+  .suggestions div:hover{background:var(--green);color:#0B0F0D;}
+  .suggestions .empty{color:var(--muted);cursor:default;}
+
+  #stops-container{margin-top:2px;}
+
+  button.link{background:none;border:none;color:var(--green);font-size:13px;cursor:pointer;padding:0;margin-top:10px;font-weight:600;}
+  button.primary{
+    width:100%;margin-top:18px;background:var(--green);color:#0B0F0D;border:none;border-radius:7px;
+    padding:13px;font-size:15px;font-weight:600;cursor:pointer;
+  }
+  button.primary:disabled{opacity:.5;}
+  button.secondary{
+    width:100%;margin-top:10px;background:var(--panel-2);border:1px solid var(--green);color:var(--green);
+    border-radius:7px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;
+  }
+
+  .status{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-top:10px;min-height:14px;}
+  .status.err{color:var(--red);}
+
+  .docket{
+    position:relative;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+    padding:20px;margin-bottom:14px;overflow:hidden;
+  }
+  .docket::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--green),transparent 70%);}
+  .docket-line{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:4px 0;}
+  .docket-line span:last-child{font-family:'IBM Plex Mono',monospace;color:var(--text);}
+  .docket-total{display:flex;justify-content:space-between;align-items:baseline;border-top:1px dashed var(--line);margin-top:10px;padding-top:12px;}
+  .docket-total .tlabel{font-size:13px;color:var(--muted);}
+  .docket-total .tval{font-family:'Fraunces',serif;font-weight:700;font-size:30px;color:var(--green);}
+  .min-note{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green);background:rgba(47,175,107,.12);border:1px solid rgba(47,175,107,.35);border-radius:5px;padding:5px 8px;margin-top:10px;display:inline-block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">VIG Executive</div>
+    <h1>Quote Builder</h1>
+    <div class="sub">Mercedes E-Class or equivalent · £2.55/mile · £95 minimum fare</div>
+  </header>
+
+  <div class="card">
+    <h3>Client details</h3>
+    <div class="row2">
+      <div><label for="c-name">Client name</label><input type="text" id="c-name"></div>
+      <div><label for="c-number">Client number</label><input type="tel" id="c-number" placeholder="07…"></div>
+    </div>
+    <label for="c-flight">Flight number (if airport pick up)</label>
+    <input type="text" id="c-flight" placeholder="e.g. BA1326">
+    <div class="row2">
+      <div><label for="c-date">Date</label><input type="date" id="c-date"></div>
+      <div><label for="c-time">Pickup time</label><input type="time" id="c-time"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Journey</h3>
+    <label>Pickup address</label>
+    <div class="addr-field" id="pickup-wrap">
+      <input type="text" class="addr-input" autocomplete="off" placeholder="Start typing a UK address…">
+      <div class="suggestions"></div>
+    </div>
+
+    <div id="stops-container"></div>
+    <button class="link" id="add-stop-btn">+ Add a stop en route</button>
+
+    <label style="margin-top:16px;">Drop-off address</label>
+    <div class="addr-field" id="dest-wrap">
+      <input type="text" class="addr-input" autocomplete="off" placeholder="Start typing a UK address…">
+      <div class="suggestions"></div>
+    </div>
+
+    <button class="primary" id="quote-btn">Calculate quote</button>
+    <div class="status" id="quote-status"></div>
+  </div>
+
+  <div id="results"></div>
+</div>
+
+<script>
+const RATE_PER_MILE = 2.55;
+const MINIMUM_FARE = 95;
+
+/* ---------- Address autocomplete (generic, works on dynamic rows) ---------- */
+function debounce(fn, delay){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), delay); }; }
+
+function wireAutocomplete(wrapEl){
+  const input = wrapEl.querySelector('.addr-input');
+  const list = wrapEl.querySelector('.suggestions');
+  input._place = null;
+
+  const runSearch = debounce(async ()=>{
+    const q = input.value;
+    input._place = null;
+    if(q.trim().length < 3){ list.classList.remove('open'); list.innerHTML=''; return; }
+    try{
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=gb&q=${encodeURIComponent(q)}`;
+      const res = await fetch(url);
+      if(!res.ok) throw new Error('NETWORK_BLOCKED');
+      const results = await res.json();
+      if(!results.length){ list.innerHTML = '<div class="empty">No matches found</div>'; list.classList.add('open'); return; }
+      list.innerHTML = results.map((r,i)=>`<div data-idx="${i}">${r.display_name}</div>`).join('');
+      list.classList.add('open');
+      list.querySelectorAll('div[data-idx]').forEach((el,i)=>{
+        el.addEventListener('click', ()=>{
+          input.value = results[i].display_name;
+          input._place = { lat: parseFloat(results[i].lat), lon: parseFloat(results[i].lon), label: results[i].display_name };
+          list.classList.remove('open'); list.innerHTML='';
+        });
+      });
+    }catch(e){
+      list.innerHTML = '<div class="empty">Address lookup unavailable — open this page from its hosted link, not the Claude preview.</div>';
+      list.classList.add('open');
+    }
+  }, 350);
+
+  input.addEventListener('input', runSearch);
+  document.addEventListener('click', (e)=>{ if(e.target !== input) list.classList.remove('open'); });
+}
+
+wireAutocomplete(document.getElementById('pickup-wrap'));
+wireAutocomplete(document.getElementById('dest-wrap'));
+
+/* ---------- Add / remove stops ---------- */
+let stopCount = 0;
+document.getElementById('add-stop-btn').addEventListener('click', ()=>{
+  stopCount++;
+  const row = document.createElement('div');
+  row.className = 'addr-row';
+  row.innerHTML = `
+    <div class="addr-field">
+      <input type="text" class="addr-input" autocomplete="off" placeholder="Stop ${stopCount} — start typing a UK address…">
+      <div class="suggestions"></div>
+    </div>
+    <button class="remove-stop" title="Remove this stop">×</button>
+  `;
+  document.getElementById('stops-container').appendChild(row);
+  wireAutocomplete(row);
+  row.querySelector('.remove-stop').addEventListener('click', ()=>{ row.remove(); });
+});
+
+/* ---------- Geocoding / routing ---------- */
+async function geocode(address){
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gb&q=${encodeURIComponent(address)}`;
+  let res; try{ res = await fetch(url); }catch(e){ throw new Error('NETWORK_BLOCKED'); }
+  if(!res.ok) throw new Error('Geocoding failed');
+  const data = await res.json();
+  if(!data.length) throw new Error(`Could not find address: "${address}"`);
+  return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), label: data[0].display_name };
+}
+
+async function routeMulti(points){
+  const coordStr = points.map(p=>`${p.lon},${p.lat}`).join(';');
+  const url = `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=false`;
+  let res; try{ res = await fetch(url); }catch(e){ throw new Error('NETWORK_BLOCKED'); }
+  if(!res.ok) throw new Error('Routing failed');
+  const data = await res.json();
+  if(!data.routes || !data.routes.length) throw new Error('No route found between these addresses');
+  const r = data.routes[0];
+  return { miles: r.distance * 0.000621371, minutes: r.duration / 60 };
+}
+
+function toWaNumber(phone){
+  let p = (phone||'').replace(/[^\d+]/g,'');
+  if(p.startsWith('+')) return p.slice(1);
+  if(p.startsWith('0')) return '44' + p.slice(1);
+  if(p.startsWith('44')) return p;
+  return p;
+}
+function fmtDate(d){ if(!d) return ''; const p=d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
+
+let lastQuote = null;
+
+document.getElementById('quote-btn').addEventListener('click', async ()=>{
+  const statusEl = document.getElementById('quote-status');
+  const resultsEl = document.getElementById('results');
+  const btn = document.getElementById('quote-btn');
+
+  const pickupInput = document.querySelector('#pickup-wrap .addr-input');
+  const destInput = document.querySelector('#dest-wrap .addr-input');
+  const stopInputs = Array.from(document.querySelectorAll('#stops-container .addr-input'));
+
+  if(!pickupInput.value.trim() || !destInput.value.trim()){
+    statusEl.textContent = 'Enter both a pickup and drop-off address.';
+    statusEl.className = 'status err';
+    return;
+  }
+
+  btn.disabled = true; statusEl.className = 'status'; resultsEl.innerHTML = ''; lastQuote = null;
+
+  try{
+    statusEl.textContent = 'Locating addresses…';
+    const allInputs = [pickupInput, ...stopInputs, destInput];
+    const points = [];
+    for(const input of allInputs){
+      if(input._place && input.value === input._place.label){
+        points.push(input._place);
+      }else{
+        points.push(await geocode(input.value.trim()));
+      }
+    }
+
+    statusEl.textContent = 'Calculating route…';
+    const { miles, minutes } = await routeMulti(points);
+
+    const calculated = miles * RATE_PER_MILE;
+    const total = Math.max(calculated, MINIMUM_FARE);
+    const minimumApplied = total > calculated;
+
+    lastQuote = {
+      miles, minutes, total,
+      pickup: pickupInput.value.trim(),
+      dest: destInput.value.trim(),
+      stops: stopInputs.map(i=>i.value.trim()).filter(Boolean)
+    };
+
+    let html = `<div class="docket">
+      <div class="docket-line"><span>Distance</span><span>${miles.toFixed(1)} miles</span></div>
+      <div class="docket-line"><span>Drive time (approx.)</span><span>${minutes.toFixed(0)} min</span></div>
+      ${lastQuote.stops.length ? `<div class="docket-line"><span>Stops en route</span><span>${lastQuote.stops.length}</span></div>` : ''}
+      <div class="docket-line"><span>Rate</span><span>£${RATE_PER_MILE.toFixed(2)}/mile</span></div>
+      <div class="docket-total"><span class="tlabel">Quoted fare</span><span class="tval">£${total.toFixed(2)}</span></div>
+      ${minimumApplied ? `<div class="min-note">Minimum fare applied (calculated: £${calculated.toFixed(2)})</div>` : ''}
+    </div>`;
+    resultsEl.innerHTML = html;
+    statusEl.textContent = '';
+
+    const clientNumber = document.getElementById('c-number').value.trim();
+    if(clientNumber){
+      const sendBtn = document.createElement('button');
+      sendBtn.className = 'secondary';
+      sendBtn.textContent = 'Send this quote via WhatsApp';
+      sendBtn.addEventListener('click', ()=>{
+        const name = document.getElementById('c-name').value.trim();
+        const flight = document.getElementById('c-flight').value.trim();
+        const date = document.getElementById('c-date').value;
+        const time = document.getElementById('c-time').value;
+
+        let msg = `Hi ${name||'there'}, thank you for your enquiry with VIG Executive.\n\n`;
+        msg += `Journey: ${lastQuote.pickup}`;
+        lastQuote.stops.forEach(s=>{ msg += ` → ${s}`; });
+        msg += ` → ${lastQuote.dest}\n`;
+        if(date || time) msg += `Date/time: ${fmtDate(date)} ${time}\n`;
+        if(flight) msg += `Flight: ${flight}\n`;
+        msg += `Distance: ${lastQuote.miles.toFixed(1)} miles\n\n`;
+        msg += `Quoted fare: £${lastQuote.total.toFixed(2)} (Mercedes E-Class or equivalent)\n\n`;
+        msg += `Please let us know if you'd like to confirm this booking.`;
+
+        window.open(`https://wa.me/${toWaNumber(clientNumber)}?text=${encodeURIComponent(msg)}`, '_blank');
+      });
+      resultsEl.appendChild(sendBtn);
+    }
+  }catch(err){
+    if(err.message === 'NETWORK_BLOCKED'){
+      statusEl.textContent = 'Address lookup unavailable in this preview — open the hosted link instead.';
+    }else{
+      statusEl.textContent = err.message || 'Something went wrong.';
+    }
+    statusEl.className = 'status err';
+  }finally{
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
