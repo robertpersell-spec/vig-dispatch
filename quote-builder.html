@@ -77,11 +77,18 @@
   .docket-total .tlabel{font-size:13px;color:var(--muted);}
   .docket-total .tval{font-family:'Fraunces',serif;font-weight:700;font-size:30px;color:var(--green);}
   .min-note{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green);background:rgba(47,175,107,.12);border:1px solid rgba(47,175,107,.35);border-radius:5px;padding:5px 8px;margin-top:10px;display:inline-block;}
+  .logo-mark{margin-bottom:14px;}
+  .company-title{font-family:'Fraunces',serif;font-weight:700;font-size:22px;letter-spacing:.04em;color:#FFFFFF;text-transform:uppercase;}
+  .company-name{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.02em;margin-top:3px;}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
+    <div class="logo-mark">
+      <div class="company-title">VIG Executive Ltd</div>
+      <div class="company-name">Company Registration No: 16777065</div>
+    </div>
     <div class="eyebrow">VIG Executive</div>
     <h1>Quote Builder</h1>
     <div class="sub" style="color:var(--muted);">Prices quoted do not include compulsory airport drop-off fees and car park fees on return journeys.</div>
@@ -91,9 +98,13 @@
   <div class="card">
     <h3>Client details</h3>
     <div class="row2">
-      <div><label for="c-name">Client name</label><input type="text" id="c-name"></div>
-      <div><label for="c-number">Client number</label><input type="tel" id="c-number" placeholder="07…"></div>
+      <div><label for="c-first">Client first name</label><input type="text" id="c-first"></div>
+      <div><label for="c-last">Client last name</label><input type="text" id="c-last"></div>
     </div>
+    <label for="c-number">Client mobile number</label>
+    <input type="tel" id="c-number" placeholder="07…">
+    <label for="c-email">Client email (optional)</label>
+    <input type="text" id="c-email" placeholder="name@example.com">
     <label for="c-flight">Flight number (if airport pick up)</label>
     <input type="text" id="c-flight" placeholder="e.g. BA1326">
     <div class="row2">
@@ -337,11 +348,20 @@ document.getElementById('quote-btn').addEventListener('click', async ()=>{
       ${nightApplies ? `<div class="docket-line"><span>Midnight–5am fee</span><span>+£${NIGHT_FEE.toFixed(2)}</span></div>` : ''}
       ${isBankHoliday ? `<div class="docket-line"><span>Bank Holiday surcharge (${BANK_HOLIDAY_SURCHARGE_PCT}%)</span><span>+£${bankHolidayFee.toFixed(2)}</span></div>` : ''}
       ${bankHolidayUnknown ? `<div class="min-note" style="color:var(--muted);background:var(--panel);border-color:var(--line);">Could not check Bank Holiday dates automatically — please verify this date manually.</div>` : ''}
-      <label style="display:flex;align-items:center;gap:8px;margin:10px 0 0;cursor:pointer;">
-        <input type="checkbox" id="congestion-check" ${congestionDetected ? 'checked' : ''} style="width:auto;">
-        <span style="font-size:12.5px;color:var(--muted);">Pickup or drop-off is in the London Congestion Charge Zone (+£${CONGESTION_CHARGE.toFixed(2)})</span>
-      </label>
-      <div class="docket-total"><span class="tlabel">Quoted fare</span><span class="tval" id="total-display">£0.00</span></div>
+
+      <label style="margin-top:14px;">Journey amount (£)</label>
+      <input type="text" inputmode="decimal" id="fee-journey" value="${(baseFare+ (nightApplies?NIGHT_FEE:0) + bankHolidayFee).toFixed(2)}">
+
+      <label>Airport drop-off fee (£)</label>
+      <input type="text" inputmode="decimal" id="fee-airport" value="0.00">
+
+      <label>Airport car park fee (£)</label>
+      <input type="text" inputmode="decimal" id="fee-carpark" value="0.00">
+
+      <label>London Congestion Charge (£)${congestionDetected ? ' — detected, please confirm' : ''}</label>
+      <input type="text" inputmode="decimal" id="fee-congestion" value="${congestionDetected ? CONGESTION_CHARGE.toFixed(2) : '0.00'}">
+
+      <div class="docket-total"><span class="tlabel">Total</span><span class="tval" id="total-display">£0.00</span></div>
       ${minimumApplied ? `<div class="min-note">Minimum fare applied (calculated: £${calculated.toFixed(2)})</div>` : ''}
       <div class="min-note" style="color:var(--muted);background:var(--panel);border-color:var(--line);">All prices are subject to compulsory airport drop-off fees and car park fees, charged in addition to the price quoted.</div>
       <div class="min-note" style="color:var(--muted);background:var(--panel);border-color:var(--line);">Surcharges may be added for journeys taken between 00:00 and 05:00 and on Bank Holidays.</div>
@@ -349,45 +369,57 @@ document.getElementById('quote-btn').addEventListener('click', async ()=>{
     resultsEl.innerHTML = html;
     statusEl.textContent = '';
 
+    const feeIds = ['fee-journey','fee-airport','fee-carpark','fee-congestion'];
     function currentTotal(){
-      const congestionOn = document.getElementById('congestion-check').checked;
-      return baseFare + (nightApplies ? NIGHT_FEE : 0) + (congestionOn ? CONGESTION_CHARGE : 0) + bankHolidayFee;
+      return feeIds.reduce((sum,id)=>{
+        const v = parseFloat(document.getElementById(id).value);
+        return sum + (isNaN(v) ? 0 : v);
+      }, 0);
     }
     function refreshTotal(){
       lastQuote.total = currentTotal();
+      lastQuote.journeyAmount = parseFloat(document.getElementById('fee-journey').value) || 0;
+      lastQuote.airportFee = parseFloat(document.getElementById('fee-airport').value) || 0;
+      lastQuote.carParkFee = parseFloat(document.getElementById('fee-carpark').value) || 0;
+      lastQuote.congestionFee = parseFloat(document.getElementById('fee-congestion').value) || 0;
       document.getElementById('total-display').textContent = `£${lastQuote.total.toFixed(2)}`;
     }
     refreshTotal();
-    document.getElementById('congestion-check').addEventListener('change', refreshTotal);
+    feeIds.forEach(id=>document.getElementById(id).addEventListener('input', refreshTotal));
 
     const clientNumber = document.getElementById('c-number').value.trim();
     if(clientNumber){
       const sendBtn = document.createElement('button');
       sendBtn.className = 'secondary';
-      sendBtn.textContent = 'Send this quote via WhatsApp';
+      sendBtn.style.marginTop = '10px';
+      sendBtn.textContent = 'Send booking confirmation & payment request via WhatsApp';
       sendBtn.addEventListener('click', ()=>{
-        const name = document.getElementById('c-name').value.trim();
+        const first = document.getElementById('c-first').value.trim();
+        const last = document.getElementById('c-last').value.trim();
+        const fullName = `${first} ${last}`.trim() || 'Client';
         const flight = document.getElementById('c-flight').value.trim();
         const date = document.getElementById('c-date').value;
         const time = document.getElementById('c-time').value;
 
-        let msg = `Hi ${name||'there'}, thank you for your enquiry with VIG Executive.\n\n`;
+        const confirmUrl = new URL('confirm-and-pay.html', window.location.href);
+        confirmUrl.searchParams.set('ref', lastQuote.reference);
+        confirmUrl.searchParams.set('name', fullName);
+        confirmUrl.searchParams.set('pickup', lastQuote.pickup);
+        confirmUrl.searchParams.set('dest', lastQuote.dest);
+        if(lastQuote.stops.length) confirmUrl.searchParams.set('stops', lastQuote.stops.join('|'));
+        if(date) confirmUrl.searchParams.set('date', date);
+        if(time) confirmUrl.searchParams.set('time', time);
+        if(flight) confirmUrl.searchParams.set('flight', flight);
+        confirmUrl.searchParams.set('journey', lastQuote.journeyAmount.toFixed(2));
+        confirmUrl.searchParams.set('airport', lastQuote.airportFee.toFixed(2));
+        confirmUrl.searchParams.set('carpark', lastQuote.carParkFee.toFixed(2));
+        confirmUrl.searchParams.set('congestion', lastQuote.congestionFee.toFixed(2));
+        confirmUrl.searchParams.set('total', lastQuote.total.toFixed(2));
+
+        let msg = `Hi ${first||'there'}, thank you for booking with VIG Executive.\n\n`;
         msg += `Quote ref: ${lastQuote.reference}\n\n`;
-        msg += `Journey: ${lastQuote.pickup}`;
-        lastQuote.stops.forEach(s=>{ msg += ` → ${s}`; });
-        msg += ` → ${lastQuote.dest}\n`;
-        if(date || time) msg += `Date/time: ${fmtDate(date)} ${time}\n`;
-        if(flight) msg += `Flight: ${flight}\n`;
-        msg += `Distance: ${lastQuote.miles.toFixed(1)} miles\n\n`;
-        msg += `Base fare: £${lastQuote.baseFare.toFixed(2)}\n`;
-        const congestionOn = document.getElementById('congestion-check').checked;
-        if(congestionOn) msg += `Congestion Charge Zone fee: £${CONGESTION_CHARGE.toFixed(2)}\n`;
-        const nightApplies = isNightFare(date, time);
-        if(nightApplies) msg += `Midnight–5am fee: £${NIGHT_FEE.toFixed(2)}\n`;
-        if(lastQuote.bankHolidayFee > 0) msg += `Bank Holiday surcharge (${BANK_HOLIDAY_SURCHARGE_PCT}%): £${lastQuote.bankHolidayFee.toFixed(2)}\n`;
-        msg += `\nQuoted fare: £${lastQuote.total.toFixed(2)} (Executive Saloon or equivalent)\n\n`;
-        msg += `Please note: all prices are subject to compulsory airport drop-off fees and car park fees, charged in addition to the price quoted. Surcharges may be added for journeys taken between 00:00 and 05:00 and on Bank Holidays.\n\n`;
-        msg += `Please let us know if you'd like to confirm this booking.`;
+        msg += `Please confirm your journey details and authorise your card here:\n${confirmUrl.toString()}\n\n`;
+        msg += `Total: £${lastQuote.total.toFixed(2)}. No payment is taken until your journey is complete.`;
 
         window.open(`https://wa.me/${toWaNumber(clientNumber)}?text=${encodeURIComponent(msg)}`, '_blank');
       });
