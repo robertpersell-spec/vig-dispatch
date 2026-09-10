@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIG Executive — Confirm & Authorise</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  :root{
+    --bg:#0B0F0D; --panel:#151A17; --panel-2:#1C231F; --line:#2A332D;
+    --text:#EDEFEC; --muted:#8B978E; --green:#2FAF6B; --red:#C9634B;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;padding:24px 16px 60px;}
+  .wrap{max-width:480px;margin:0 auto;}
+
+  .logo-mark{margin-bottom:16px;}
+  .company-title{font-family:'Fraunces',serif;font-weight:700;font-size:20px;letter-spacing:.04em;color:#FFFFFF;text-transform:uppercase;}
+  .company-name{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);letter-spacing:.02em;margin-top:3px;}
+
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:24px;margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:13px;line-height:1.5;}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;margin-top:16px;}
+  h3{font-family:'Fraunces',serif;font-size:14px;font-weight:600;margin:0 0 10px;color:var(--green);}
+  .row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13.5px;}
+  .row:last-child{border-bottom:none;}
+  .row .label{color:var(--muted);}
+  .row .value{font-weight:600;text-align:right;max-width:60%;}
+  .amount-row{display:flex;justify-content:space-between;align-items:baseline;border-top:1px dashed var(--line);margin-top:8px;padding-top:10px;}
+  .amount-row .tlabel{font-size:13px;color:var(--muted);}
+  .amount-row .tval{font-family:'Fraunces',serif;font-weight:700;font-size:26px;color:var(--green);}
+
+  .confirm-box{display:flex;gap:10px;align-items:flex-start;cursor:pointer;}
+  .confirm-box input{width:auto;margin-top:3px;flex:none;}
+  .confirm-box span{font-size:12.5px;line-height:1.55;color:var(--muted);}
+
+  #payment-section{display:none;}
+  #payment-element{margin-top:14px;}
+  button.primary{
+    width:100%;margin-top:16px;background:var(--green);color:#0B0F0D;border:none;border-radius:7px;
+    padding:14px;font-size:15px;font-weight:600;cursor:pointer;
+  }
+  button.primary:disabled{opacity:.5;}
+  .status{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-top:12px;text-align:center;min-height:14px;}
+  .status.err{color:var(--red);}
+  .status.ok{color:var(--green);}
+  .note{font-size:11.5px;color:var(--muted);text-align:center;margin-top:14px;line-height:1.6;}
+  .success-box{text-align:center;padding:16px 0;}
+  .success-box .tick{font-size:40px;color:var(--green);margin-bottom:10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo-mark">
+    <div class="company-title">VIG Executive Ltd</div>
+    <div class="company-name">Company Registration No: 16777065</div>
+  </div>
+  <h1>Confirm Your Journey</h1>
+  <div class="sub">Please check the details below carefully before authorising your card.</div>
+
+  <div class="card">
+    <h3>Journey details</h3>
+    <div class="row"><span class="label">Reference</span><span class="value" id="v-ref">—</span></div>
+    <div class="row"><span class="label">Client</span><span class="value" id="v-name">—</span></div>
+    <div class="row"><span class="label">Date</span><span class="value" id="v-date">—</span></div>
+    <div class="row"><span class="label">Pickup time</span><span class="value" id="v-time">—</span></div>
+    <div id="v-flight-row" class="row" style="display:none;"><span class="label">Flight</span><span class="value" id="v-flight">—</span></div>
+    <div class="row"><span class="label">Pickup</span><span class="value" id="v-pickup">—</span></div>
+    <div id="v-stops-row" class="row" style="display:none;"><span class="label">Via</span><span class="value" id="v-stops">—</span></div>
+    <div class="row"><span class="label">Drop-off</span><span class="value" id="v-dest">—</span></div>
+  </div>
+
+  <div class="card">
+    <h3>Fare breakdown</h3>
+    <div class="row"><span class="label">Journey amount</span><span class="value" id="v-journey">£0.00</span></div>
+    <div id="v-airport-row" class="row" style="display:none;"><span class="label">Airport drop-off fee</span><span class="value" id="v-airport">£0.00</span></div>
+    <div id="v-carpark-row" class="row" style="display:none;"><span class="label">Airport car park fee</span><span class="value" id="v-carpark">£0.00</span></div>
+    <div id="v-congestion-row" class="row" style="display:none;"><span class="label">London Congestion Charge</span><span class="value" id="v-congestion">£0.00</span></div>
+    <div class="amount-row"><span class="tlabel">Total</span><span class="tval" id="v-total">£0.00</span></div>
+  </div>
+
+  <div class="card">
+    <label class="confirm-box">
+      <input type="checkbox" id="confirm-check">
+      <span>I confirm the full addresses (including postcodes) shown in this form and confirm the date and pick up times. I agree to place my card details on file with Stripe, which is an encrypted service, and on completion of the job, pay VIG Executive the amount shown. If there are any additional charges, these will be taken at the time of payment as agreed.</span>
+    </label>
+
+    <div id="payment-section">
+      <div id="payment-element"></div>
+      <button class="primary" id="submit-btn" disabled>Authorise card</button>
+      <div class="note">Card details are handled securely by Stripe. VIG Executive never sees or stores your card number.</div>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+</div>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+const SUPABASE_URL = 'https://xzfgtblyitqyrjoratdk.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_fCf1dCog223lkjXyhEeuEQ_nVgZxnB3';
+const STRIPE_PUBLISHABLE_KEY = 'pk_test_51UBzZmKcDfLUoj0VTIYeyhd1Q8i1I3IKnllXf6V6SWMaMZZilYJ0jeUBWGJGio3yPHLocr92oVJIlLbGuhKUYsmx00pA9ypaL6';
+
+const params = new URLSearchParams(window.location.search);
+const ref = params.get('ref') || '—';
+const name = params.get('name') || '—';
+const pickup = params.get('pickup') || '—';
+const dest = params.get('dest') || '—';
+const stops = (params.get('stops') || '').split('|').filter(Boolean);
+const date = params.get('date') || '';
+const time = params.get('time') || '';
+const flight = params.get('flight') || '';
+const journey = parseFloat(params.get('journey')) || 0;
+const airport = parseFloat(params.get('airport')) || 0;
+const carpark = parseFloat(params.get('carpark')) || 0;
+const congestion = parseFloat(params.get('congestion')) || 0;
+const total = parseFloat(params.get('total')) || (journey+airport+carpark+congestion);
+
+function fmtDate(d){ if(!d) return '—'; const p=d.split('-'); return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : d; }
+
+document.getElementById('v-ref').textContent = ref;
+document.getElementById('v-name').textContent = name;
+document.getElementById('v-date').textContent = fmtDate(date);
+document.getElementById('v-time').textContent = time || '—';
+document.getElementById('v-pickup').textContent = pickup;
+document.getElementById('v-dest').textContent = dest;
+if(flight){ document.getElementById('v-flight-row').style.display='flex'; document.getElementById('v-flight').textContent = flight; }
+if(stops.length){ document.getElementById('v-stops-row').style.display='flex'; document.getElementById('v-stops').textContent = stops.join(', '); }
+
+document.getElementById('v-journey').textContent = `£${journey.toFixed(2)}`;
+if(airport>0){ document.getElementById('v-airport-row').style.display='flex'; document.getElementById('v-airport').textContent = `£${airport.toFixed(2)}`; }
+if(carpark>0){ document.getElementById('v-carpark-row').style.display='flex'; document.getElementById('v-carpark').textContent = `£${carpark.toFixed(2)}`; }
+if(congestion>0){ document.getElementById('v-congestion-row').style.display='flex'; document.getElementById('v-congestion').textContent = `£${congestion.toFixed(2)}`; }
+document.getElementById('v-total').textContent = `£${total.toFixed(2)}`;
+
+const statusEl = document.getElementById('status');
+const submitBtn = document.getElementById('submit-btn');
+const confirmCheck = document.getElementById('confirm-check');
+const paymentSection = document.getElementById('payment-section');
+
+let stripe, elements, initialised = false;
+
+confirmCheck.addEventListener('change', async ()=>{
+  if(confirmCheck.checked){
+    paymentSection.style.display = 'block';
+    if(!initialised){ initialised = true; await initPayment(); }
+  }else{
+    paymentSection.style.display = 'none';
+  }
+});
+
+async function initPayment(){
+  if(total <= 0){
+    statusEl.textContent = 'This link is missing a valid amount — please ask VIG Executive to resend it.';
+    statusEl.className = 'status err';
+    return;
+  }
+  statusEl.textContent = 'Setting up secure payment…';
+  try{
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/create-payment-intent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({ amount: total, reference: ref })
+    });
+    const data = await res.json();
+    if(!res.ok || !data.clientSecret) throw new Error(data.error || 'Could not start card authorisation.');
+
+    stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+    elements = stripe.elements({ clientSecret: data.clientSecret, appearance: {
+      theme: 'night',
+      variables: { colorPrimary: '#2FAF6B', colorBackground: '#1C231F', colorText: '#EDEFEC', borderRadius: '7px' }
+    }});
+    elements.create('payment').mount('#payment-element');
+    statusEl.textContent = '';
+    submitBtn.disabled = false;
+  }catch(err){
+    statusEl.textContent = (err.message||'').includes('fetch') ? 'Could not connect — open this page from its hosted link, not a preview.' : err.message;
+    statusEl.className = 'status err';
+  }
+}
+
+submitBtn.addEventListener('click', async ()=>{
+  submitBtn.disabled = true;
+  statusEl.textContent = 'Authorising your card…';
+  statusEl.className = 'status';
+
+  try{
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: { return_url: window.location.href },
+      redirect: 'if_required'
+    });
+
+    if(error){
+      statusEl.textContent = error.message || 'Card authorisation failed.';
+      statusEl.className = 'status err';
+      submitBtn.disabled = false;
+      return;
+    }
+  }catch(err){
+    statusEl.textContent = 'Could not reach Stripe — please check your connection and try again. (' + (err.message || 'unknown error') + ')';
+    statusEl.className = 'status err';
+    submitBtn.disabled = false;
+    return;
+  }
+
+  document.querySelector('.wrap').insertAdjacentHTML('beforeend', `
+    <div class="card success-box">
+      <div class="tick">✓</div>
+      <div style="font-family:'Fraunces',serif;font-weight:600;font-size:18px;">Card authorised</div>
+      <div class="status ok" style="margin-top:6px;">A hold of £${total.toFixed(2)} has been placed. Payment will be collected once your journey with VIG Executive is complete.</div>
+    </div>`);
+  paymentSection.style.display = 'none';
+  confirmCheck.parentElement.style.display = 'none';
+});
+</script>
+</body>
+</html>
