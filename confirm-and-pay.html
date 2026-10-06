@@ -157,7 +157,7 @@ async function initPayment(){
   }
   statusEl.textContent = 'Setting up secure payment…';
   try{
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/create-payment-intent`, {
+     const res = await fetch(`${SUPABASE_URL}/functions/v1/dynamic-handler`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
