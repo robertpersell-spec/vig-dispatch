@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no">
+<title>VIG Executive — Quote Builder</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+:root{
+  --bg:#000000; --panel:#0A0A0A; --panel-2:#141414; --line:#2A2A2A;
+  --text:#FFFFFF; --muted:#9A9A9A; --green:#6FC18B; --red:#C9634B;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;padding:24px 16px 60px;}
+.wrap{max-width:520px;margin:0 auto;}
+.logo{width:52px;height:52px;display:block;margin-bottom:10px;}
+.company-title{font-family:'Fraunces',serif;font-weight:700;font-size:20px;letter-spacing:.04em;color:#FFFFFF;text-transform:uppercase;}
+.company-name{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);letter-spacing:.02em;margin-top:3px;margin-bottom:16px;}
+h1{font-family:'Fraunces',serif;font-weight:600;font-size:22px;margin:0 0 6px;}
+.sub{color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:16px;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;margin-top:16px;}
+h3{font-family:'Fraunces',serif;font-size:14px;font-weight:600;margin:0 0 14px;color:var(--green);}
+label{display:block;font-size:12.5px;color:var(--muted);margin:0 0 5px;}
+input{
+  width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;
+  padding:11px 12px;color:var(--text);font-size:14px;font-family:'Inter',sans-serif;margin-bottom:14px;
+}
+input:focus{outline:none;border-color:var(--green);}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fare-total{
+  display:flex;justify-content:space-between;align-items:baseline;border-top:1px dashed var(--line);
+  margin-top:4px;padding-top:12px;
+}
+.fare-total .tlabel{font-size:13px;color:var(--muted);}
+.fare-total .tval{font-family:'Fraunces',serif;font-weight:700;font-size:24px;color:var(--green);}
+button{
+  width:100%;margin-top:12px;border:none;border-radius:7px;padding:14px;font-size:14.5px;
+  font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;
+}
+button.primary{background:var(--green);color:#0B0F0D;}
+button.secondary{background:var(--panel-2);color:var(--text);border:1px solid var(--line);}
+.hint{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.5;}
+.section-label{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:18px 0 2px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <img class="logo" src="vig-logo.jpg" alt="VIG Executive">
+  <div class="company-title">VIG Executive Ltd</div>
+  <div class="company-name">Quote Builder — internal use only</div>
+
+  <h1>Build a quote</h1>
+  <div class="sub">Fill in the client and journey details, set the price yourself, then send.</div>
+
+  <div class="card">
+    <h3>Client</h3>
+    <label for="name">Client name</label>
+    <input id="name" type="text">
+    <label for="clientPhone">Client WhatsApp number</label>
+    <input id="clientPhone" type="tel" placeholder="e.g. 447911123456">
+    <div class="hint">International format, no spaces or plus sign, this is who the quote and payment links get sent to.</div>
+  </div>
+
+  <div class="card">
+    <h3>Journey</h3>
+    <label for="ref">Reference</label>
+    <input id="ref" type="text">
+    <div class="row2">
+      <div>
+        <label for="date">Date</label>
+        <input id="date" type="date">
+      </div>
+      <div>
+        <label for="time">Pickup time</label>
+        <input id="time" type="time">
+      </div>
+    </div>
+    <label for="flight">Flight number (optional)</label>
+    <input id="flight" type="text">
+    <label for="pickup">Pickup address</label>
+    <input id="pickup" type="text">
+    <label for="stops">Via stops (optional, separate with a comma)</label>
+    <input id="stops" type="text">
+    <label for="dest">Drop-off address</label>
+    <input id="dest" type="text">
+  </div>
+
+  <div class="card">
+    <h3>Price</h3>
+    <label for="journey">Journey amount (£)</label>
+    <input id="journey" type="number" step="0.01" min="0">
+    <label for="airport">Airport drop-off fee (£, optional)</label>
+    <input id="airport" type="number" step="0.01" min="0">
+    <label for="carpark">Airport car park fee (£, optional)</label>
+    <input id="carpark" type="number" step="0.01" min="0">
+    <label for="congestion">London Congestion Charge (£, optional)</label>
+    <input id="congestion" type="number" step="0.01" min="0">
+    <div class="fare-total">
+      <span class="tlabel">Total</span>
+      <span class="tval" id="totalDisplay">£0.00</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Send</h3>
+    <button class="primary" id="sendQuoteBtn">Send quote for acceptance</button>
+    <div class="hint">Sends the client a link showing the journey and price, with an "Accept booking" button. No payment is taken at this stage.</div>
+    <button class="secondary" id="sendPaymentBtn" style="margin-top:18px;">Send payment request</button>
+    <div class="hint">Use this once the client has accepted. Sends the Stripe card authorisation link for the same journey and price.</div>
+  </div>
+</div>
+
+<script>
+  // ---- Configuration ----
+  const QUOTE_VIEW_URL = 'https://robertpersell-spec.github.io/vig-dispatch/quote-view.html';
+  const CONFIRM_AND_PAY_URL = 'https://robertpersell-spec.github.io/vig-dispatch/confirm-and-pay.html';
+  // ------------------------
+
+  function pad(n){ return n.toString().padStart(2,'0'); }
+  function genRef(){
+    const d = new Date();
+    const datePart = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+    const rand = Math.floor(1000 + Math.random()*9000);
+    return `VIG-${datePart}-${rand}`;
+  }
+  document.getElementById('ref').value = genRef();
+
+  const fields = ['journey','airport','carpark','congestion'];
+  function recalcTotal(){
+    const total = fields.reduce((sum,id)=> sum + (parseFloat(document.getElementById(id).value) || 0), 0);
+    document.getElementById('totalDisplay').textContent = `£${total.toFixed(2)}`;
+    return total;
+  }
+  fields.forEach(id => document.getElementById(id).addEventListener('input', recalcTotal));
+
+  function buildParams(total){
+    const p = new URLSearchParams();
+    p.set('ref', document.getElementById('ref').value || genRef());
+    p.set('name', document.getElementById('name').value || '');
+    p.set('pickup', document.getElementById('pickup').value || '');
+    p.set('dest', document.getElementById('dest').value || '');
+    const stops = document.getElementById('stops').value.split(',').map(s=>s.trim()).filter(Boolean).join('|');
+    if(stops) p.set('stops', stops);
+    p.set('date', document.getElementById('date').value || '');
+    p.set('time', document.getElementById('time').value || '');
+    const flight = document.getElementById('flight').value;
+    if(flight) p.set('flight', flight);
+    p.set('journey', (parseFloat(document.getElementById('journey').value)||0).toFixed(2));
+    const airport = parseFloat(document.getElementById('airport').value)||0;
+    const carpark = parseFloat(document.getElementById('carpark').value)||0;
+    const congestion = parseFloat(document.getElementById('congestion').value)||0;
+    if(airport) p.set('airport', airport.toFixed(2));
+    if(carpark) p.set('carpark', carpark.toFixed(2));
+    if(congestion) p.set('congestion', congestion.toFixed(2));
+    p.set('total', total.toFixed(2));
+    return p;
+  }
+
+  function clientPhone(){
+    return (document.getElementById('clientPhone').value || '').replace(/[^0-9]/g,'');
+  }
+
+  document.getElementById('sendQuoteBtn').addEventListener('click', () => {
+    const phone = clientPhone();
+    if(!phone){ alert('Enter the client\'s WhatsApp number first.'); return; }
+    const total = recalcTotal();
+    const params = buildParams(total);
+    const link = `${QUOTE_VIEW_URL}?${params.toString().replace(/\+/g,'%20')}`;
+    const name = document.getElementById('name').value || 'there';
+    const message = `Hi ${name}, thank you for your enquiry. Here's your quote from VIG Executive:\n\n${link}\n\nPlease take a look and tap Accept Booking if you'd like to go ahead.`;
+    window.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  });
+
+  document.getElementById('sendPaymentBtn').addEventListener('click', () => {
+    const phone = clientPhone();
+    if(!phone){ alert('Enter the client\'s WhatsApp number first.'); return; }
+    const total = recalcTotal();
+    const params = buildParams(total);
+    const link = `${CONFIRM_AND_PAY_URL}?${params.toString().replace(/\+/g,'%20')}`;
+    const name = document.getElementById('name').value || 'there';
+    const message = `Hi ${name}, thank you for confirming your booking with VIG Executive. Please use this secure link to place your card on file, no payment is taken now, it's collected once your journey is complete:\n\n${link}`;
+    window.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  });
+</script>
+</body>
+</html>
